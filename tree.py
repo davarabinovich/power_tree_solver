@@ -1,4 +1,7 @@
 
+from typing import NewType
+
+
 class Tree:
     class Node:
         class DeletingParent(Exception): pass
@@ -63,7 +66,8 @@ class Tree:
                 return
             parent_descs = self._parent._descendants
             parent_descs.remove(self)
-
+    TreeNode = NewType('TreeNode', Node)
+    
 
     class AlreadyExistingRoot(Exception): pass
     class NotNode(Exception): pass
@@ -91,20 +95,20 @@ class Tree:
             raise Tree.AlreadyExistingRoot
         return self._root
 
-    def add_leaf(self, parent):
+    def add_leaf(self, parent : TreeNode):
         Tree.validate_nodes(parent)
         leaf = Tree.Node()
         leaf.connect_to(parent)
         return leaf
 
-    def insert_node_before(self, descendant):
+    def insert_node_before(self, descendant : TreeNode):
         Tree.validate_nodes(descendant)
         new_node = Tree.Node()
         descendant.replace_with(new_node)
         descendant.connect_to(new_node)
         return new_node
 
-    def insert_node_after(self, parent):
+    def insert_node_after(self, parent : TreeNode):
         Tree.validate_nodes(parent)
 
         new_node = Tree.Node()
@@ -115,46 +119,46 @@ class Tree:
 
         return new_node
 
-    def move_leaf(self, leaf, new_parent):
+    def move_leaf(self, leaf : TreeNode, new_parent : TreeNode):
         Tree.validate_nodes(leaf, new_parent)
         if Tree.Node.is_parent(leaf):
             raise Tree.NotLeaf
         leaf.connect_to(new_parent)
 
-    def move_node(self, node, new_parent):
+    def move_node(self, node : TreeNode, new_parent : TreeNode):
         Tree.validate_nodes(node, new_parent)
         node_parent = node.parent
         for desc in node.descendants:
             desc.connect_to(node_parent)
         node.connect_to(new_parent)
 
-    def move_subtree(self, subroot, new_parent):
+    def move_subtree(self, subroot : TreeNode, new_parent : TreeNode):
         Tree.validate_nodes(subroot, new_parent)
         if Tree.Node.is_ancestor(subroot, new_parent):
             raise Tree.CyclingMovement
         subroot.connect_to(new_parent)
 
-    def delete_leafage(self, parent):
+    def delete_leafage(self, parent : TreeNode):
         Tree.validate_nodes(parent)
         for desc in parent.descendants:
             del desc
 
-    def delete_leaf(self, leaf):
+    def delete_leaf(self, leaf : TreeNode):
         Tree.validate_nodes(leaf)
         if Tree.Node.is_parent(leaf):
             raise Tree.NotLeaf
         del leaf
 
-    def delete_node(self, node):
+    def delete_node(self, node : TreeNode):
         Tree.validate_nodes(node)
         node_parent = node.parent
         for desc in node.descendants:
             desc.connect_to(node_parent)
         del node
 
-    def delete_subtree(self, subroot):
+    def delete_subtree(self, subroot : TreeNode):
         Tree.validate_nodes(subroot)
-        for desc in subroot.descendance:
+        for desc in subroot.descendants:
             self.delete_subtree(desc)
         del subroot
 
