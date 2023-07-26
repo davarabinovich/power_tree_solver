@@ -5,9 +5,16 @@ from typing import NewType
 class Forest:
     class Node:
         class DeletingParent(Exception): pass
+        class IncompatibleNodes(Exception): pass
 
-        def __init__(self):
+        def __init__(self, forest=None):
             self._descendants = []
+            self._forest = forest
+            self._content = None
+
+        @staticmethod
+        def is_root(node):
+            return node._parent == None
 
         @staticmethod
         def is_parent(node):
@@ -22,6 +29,9 @@ class Forest:
             return False
 
         def connect_to(self, parent):
+            if self._forest != parent._forest:
+                raise Forest.Node.IncompatibleNodes
+
             if self._parent is Forest.Node:
                 self.disconnect()
             self._parent = parent
@@ -35,6 +45,9 @@ class Forest:
             self._parent = None
 
         def replace_with(self, node):
+            if self._forest != node._forest:
+                raise Forest.Node.IncompatibleNodes
+
             cur_parent = self._parent
             if cur_parent is Forest.Node:
                 parent_descs = cur_parent._descendants
@@ -43,6 +56,13 @@ class Forest:
 
             node_parent = node._parent
             node._parent, self._parent = cur_parent, node_parent
+
+        @property
+        def content(self):
+            return self._content
+        @content.setter
+        def content(self, value):
+            self._content = value
 
         @property
         def descendants(self):
@@ -58,6 +78,10 @@ class Forest:
         def parent(self, value):
             self._parent = value
 
+        @property
+        def forest(self):
+            return self._forest
+
         def __del__(self):
             if len(self._descendants) > 0:
                 raise Forest.Node.DeletingParent
@@ -67,7 +91,7 @@ class Forest:
             parent_descs = self._parent._descendants
             parent_descs.remove(self)
     TreeNode = NewType('TreeNode', Node)
-    
+
 
     class NotNode(Exception): pass
     class NotLeaf(Exception): pass
@@ -93,13 +117,13 @@ class Forest:
 
     def add_leaf(self, parent : TreeNode):
         Forest.validate_nodes(parent)
-        leaf = Forest.Node()
+        leaf = self._create_node()
         leaf.connect_to(parent)
         return leaf
 
     def insert_node_before(self, descendant : TreeNode):
         Forest.validate_nodes(descendant)
-        new_node = Forest.Node()
+        new_node = self._create_node()
         descendant.replace_with(new_node)
         descendant.connect_to(new_node)
         return new_node
@@ -107,7 +131,7 @@ class Forest:
     def insert_node_after(self, parent : TreeNode):
         Forest.validate_nodes(parent)
 
-        new_node = Forest.Node()
+        new_node = self._create_node()
         new_node.connect_to(parent)
         parent_descs = parent.descendants
         for desc in parent_descs:
@@ -158,6 +182,41 @@ class Forest:
             self.delete_subtree(desc)
         del subroot
 
+    def get_node_content(self, node):
+        return node.content
+
+    def set_node_content(self, ):
+
+    def _create_node(self) -> TreeNode:
+        return Forest.Node(self)
+
+
+    def __iter__(self):
+        self._cur_indices = [0]
+        self._cur_node = self._roots[0]
+        return self
 
     def __next__(self):
-        pass
+        if Forest.Node.is_parent(self._cur_node):
+            self._cur_indices.append(0)
+            self._cur_node = self._cur_node.descendants[0]
+            return self._cur_node
+
+        self._cur_indices[-1] += 1
+        if len(self._cur_node.parent.descendants)-1 >= self._cur_indices[-1]:
+            self._cur_node = self._cur_node.parent.descendants[self._cur_indices[-1]]
+            return self._cur_node
+
+        while len(self._cur_node.parent.descendants)-1 == self._cur_indices[-1]:
+            self._cur_indices.pop(-1)
+            self._cur_node = self._cur_node.parent
+
+            if (Forest.Node.is_root(self._cur_node)):
+                self._cur_indices[-1] += 1
+                if len(self._roots) == self._cur_indices[-1]:
+                    raise StopIteration
+                return self._roots[self._cur_indices[0]]
+
+        self._cur_indices[-1] += 1
+        self._cur_node = self._cur_node.parent.descendants[self._cur_indices[-1]]
+        return self._cur_node
