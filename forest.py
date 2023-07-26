@@ -2,7 +2,7 @@
 from typing import NewType
 
 
-class Tree:
+class Forest:
     class Node:
         class DeletingParent(Exception): pass
 
@@ -22,7 +22,7 @@ class Tree:
             return False
 
         def connect_to(self, parent):
-            if self._parent is Tree.Node:
+            if self._parent is Forest.Node:
                 self.disconnect()
             self._parent = parent
             parent._descendants.append(self)
@@ -36,7 +36,7 @@ class Tree:
 
         def replace_with(self, node):
             cur_parent = self._parent
-            if cur_parent is Tree.Node:
+            if cur_parent is Forest.Node:
                 parent_descs = cur_parent._descendants
                 cur_index = parent_descs.index(self)
                 parent_descs[cur_index] = node
@@ -60,7 +60,7 @@ class Tree:
 
         def __del__(self):
             if len(self._descendants) > 0:
-                raise Tree.Node.DeletingParent
+                raise Forest.Node.DeletingParent
 
             if self._parent is None:
                 return
@@ -69,7 +69,6 @@ class Tree:
     TreeNode = NewType('TreeNode', Node)
     
 
-    class AlreadyExistingRoot(Exception): pass
     class NotNode(Exception): pass
     class NotLeaf(Exception): pass
     class CyclingMovement(Exception): pass
@@ -78,40 +77,37 @@ class Tree:
     @staticmethod
     def validate_nodes(*argv):
         for arg in argv:
-            if arg is not Tree.Node:
-                raise Tree.NotNode
+            if arg is not Forest.Node:
+                raise Forest.NotNode
 
 
     def __init__(self, is_root=True):
-        self._root = None
+        self._roots = []
         if is_root:
-            self._root = Tree.Node()
+            self._roots.append(Forest.Node())
 
 
     def create_root(self):
-        if self._root is None:
-            self._root = Tree.Node()
-        else:
-            raise Tree.AlreadyExistingRoot
-        return self._root
+        self._roots.append(Forest.Node())
+        return self._roots
 
     def add_leaf(self, parent : TreeNode):
-        Tree.validate_nodes(parent)
-        leaf = Tree.Node()
+        Forest.validate_nodes(parent)
+        leaf = Forest.Node()
         leaf.connect_to(parent)
         return leaf
 
     def insert_node_before(self, descendant : TreeNode):
-        Tree.validate_nodes(descendant)
-        new_node = Tree.Node()
+        Forest.validate_nodes(descendant)
+        new_node = Forest.Node()
         descendant.replace_with(new_node)
         descendant.connect_to(new_node)
         return new_node
 
     def insert_node_after(self, parent : TreeNode):
-        Tree.validate_nodes(parent)
+        Forest.validate_nodes(parent)
 
-        new_node = Tree.Node()
+        new_node = Forest.Node()
         new_node.connect_to(parent)
         parent_descs = parent.descendants
         for desc in parent_descs:
@@ -120,44 +116,44 @@ class Tree:
         return new_node
 
     def move_leaf(self, leaf : TreeNode, new_parent : TreeNode):
-        Tree.validate_nodes(leaf, new_parent)
-        if Tree.Node.is_parent(leaf):
-            raise Tree.NotLeaf
+        Forest.validate_nodes(leaf, new_parent)
+        if Forest.Node.is_parent(leaf):
+            raise Forest.NotLeaf
         leaf.connect_to(new_parent)
 
     def move_node(self, node : TreeNode, new_parent : TreeNode):
-        Tree.validate_nodes(node, new_parent)
+        Forest.validate_nodes(node, new_parent)
         node_parent = node.parent
         for desc in node.descendants:
             desc.connect_to(node_parent)
         node.connect_to(new_parent)
 
     def move_subtree(self, subroot : TreeNode, new_parent : TreeNode):
-        Tree.validate_nodes(subroot, new_parent)
-        if Tree.Node.is_ancestor(subroot, new_parent):
-            raise Tree.CyclingMovement
+        Forest.validate_nodes(subroot, new_parent)
+        if Forest.Node.is_ancestor(subroot, new_parent):
+            raise Forest.CyclingMovement
         subroot.connect_to(new_parent)
 
     def delete_leafage(self, parent : TreeNode):
-        Tree.validate_nodes(parent)
+        Forest.validate_nodes(parent)
         for desc in parent.descendants:
             del desc
 
     def delete_leaf(self, leaf : TreeNode):
-        Tree.validate_nodes(leaf)
-        if Tree.Node.is_parent(leaf):
-            raise Tree.NotLeaf
+        Forest.validate_nodes(leaf)
+        if Forest.Node.is_parent(leaf):
+            raise Forest.NotLeaf
         del leaf
 
     def delete_node(self, node : TreeNode):
-        Tree.validate_nodes(node)
+        Forest.validate_nodes(node)
         node_parent = node.parent
         for desc in node.descendants:
             desc.connect_to(node_parent)
         del node
 
     def delete_subtree(self, subroot : TreeNode):
-        Tree.validate_nodes(subroot)
+        Forest.validate_nodes(subroot)
         for desc in subroot.descendants:
             self.delete_subtree(desc)
         del subroot
