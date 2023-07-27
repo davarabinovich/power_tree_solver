@@ -43,8 +43,9 @@ class NodeFullTreeMatcher:
 
         return True
 
-class TestNode(unittest.TestCase):
-    def test_disconnect_cases(self):
+
+class TestNodeDisconnect(unittest.TestCase):
+    def test_disconnect_leaf_from_none(self):
         node = build_tree([3])
         comparing_node = build_tree([3])
         is_exception = False
@@ -54,6 +55,20 @@ class TestNode(unittest.TestCase):
             is_exception = True
         self.assertFalse(is_exception)
         self.assertEqual(NodeFullTreeMatcher(comparing_node), node)
+
+    def test_disconnect_subtree_from_none(self):
+        subroot = build_tree([3, 4, [9, 7, 5]])
+        # comparing_subroot = build_tree([3, 4, [9, 7, 5]])
+        # is_exception = False
+        # try:
+        #     subroot.disconnect()
+        # except:
+        #     is_exception = True
+        # self.assertFalse(is_exception)
+        # self.assertEqual(NodeFullTreeMatcher(comparing_subroot), subroot)
+
+        # root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5 , [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        # node = root.successors[0].successors[0]
         # TODO: Test disconnection from None, from root, from inner node, leaf and subtree
 
     def test_connect_to(self):
@@ -61,6 +76,7 @@ class TestNode(unittest.TestCase):
         # TODO: Test connect to root, node above, node below, leaf,
         #       inner and terminal successors, None, root, inner node and leaf in another Tree
 
+# TODO: Test deletion
 class TestForest(unittest.TestCase):
     pass
 
