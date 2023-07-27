@@ -183,6 +183,7 @@ class Forest:
         self._cur_node = self._roots[0]
         return self
 
+    # TODO: Traverse by subroot with syntax indentical to traverse by the whole tree
     def __next__(self):
         if self._cur_node.is_parent():
             self._cur_indices.append(0)
@@ -213,7 +214,13 @@ class Forest:
     class ForestNode(Node):
         def __init__(self, forest):
             super().__init__()
-            self.forest = forest
+            self._forest = forest
+
+        def set_forest_ref(self, new_forest_ref):
+            self._forest = new_forest_ref
+
+        def get_forest_ref(self):
+            return self._forest
 
     def _create_node(self) -> ForestNode:
         return Forest.ForestNode(self)
@@ -226,5 +233,32 @@ class Forest:
         for arg in argv:
             if arg is not Node:
                 raise Forest.NotNode
-            if arg.forest != self:
+            if arg.get_forest_ref() != self:
                 raise Forest.AlienNode
+
+
+class Tree(Forest):
+    class AlreadyExistingRoot(Exception): pass
+
+    def __init__(self):
+        super().__init__()
+        self._roots = (self._create_node(),)
+
+    @staticmethod
+    def create(node : Node) -> Tree:
+        # TODO : Copy successors or not
+        pass
+
+    def create_root(self):
+        raise Tree.AlreadyExistingRoot
+
+    def free_node(self, node : Forest.ForestNode) -> Tree:
+        # TODO: To implement
+        pass
+
+    def free_subtree(self, subroot : Forest.ForestNode) -> Tree:
+        # TODO: To implement
+        pass
+
+    def _make_root(self, node : Forest.ForestNode):
+        raise Tree.AlreadyExistingRoot
