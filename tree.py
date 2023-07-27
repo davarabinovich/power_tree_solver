@@ -35,28 +35,6 @@ class Node:
         node._parent, self._parent = cur_parent, node_parent
 
 
-    @property
-    def content(self):
-        return self._content
-    @content.setter
-    def content(self, value):
-        self._content = value
-
-    @property
-    def parent(self):
-        return self._parent
-    @parent.setter
-    def parent(self, value):
-        self._parent = value
-
-    @property
-    def successors(self):
-        return self._successors
-    @successors.setter
-    def successors(self, value):
-        self._successors = value
-
-
     def is_root(self):
         return self._parent == None
 
@@ -80,39 +58,62 @@ class Node:
         self._parent._successors.remove(self)
 
 
+    @property
+    def content(self):
+        return self._content
+    @content.setter
+    def content(self, value):
+        self._content = value
+
+    @property
+    def parent(self):
+        return self._parent
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
+
+    @property
+    def successors(self):
+        return self._successors
+    @successors.setter
+    def successors(self, value):
+        self._successors = value
+
+
 class Forest:
     # Public interface
     class NotNode(Exception): pass
     class NotLeaf(Exception): pass
     class NotSuccessor(Exception) :pass
     class CyclingMovement(Exception): pass
+    class AlienNode(Exception): pass
 
 
     def __init__(self, is_root=True):
         self._roots = []
         if is_root:
-            self._roots.append(Node())
+            self._roots.append(self._create_node())
 
 
-    def create_root(self) -> Node:
-        self._roots.append(Node())
+    def create_root(self) -> ForestNode:
+        self._roots.append(self._create_node())
         return self._roots[-1]
 
-    def add_leaf(self, parent : Node) -> Node:
-        Forest._validate_nodes(parent)
+    def add_leaf(self, parent : ForestNode) -> ForestNode:
+        self._validate_nodes(parent)
         leaf = self._create_node()
         leaf.connect_to(parent)
         return leaf
 
-    def insert_node_before(self, successor : Node) -> Node:
-        Forest._validate_nodes(successor)
+    def insert_node_before(self, successor : ForestNode) -> ForestNode:
+        self._validate_nodes(successor)
         new_node = self._create_node()
         successor.replace_with(new_node)
         successor.connect_to(new_node)
         return new_node
 
-    def insert_node_after(self, parent : Node) -> Node:
-        Forest._validate_nodes(parent)
+    def insert_node_after(self, parent : ForestNode) -> ForestNode:
+        self._validate_nodes(parent)
 
         new_node = self._create_node()
         new_node.connect_to(parent)
@@ -122,43 +123,43 @@ class Forest:
 
         return new_node
 
-    def move_node(self, node : Node, new_parent : Node):
-        Forest._validate_nodes(node, new_parent)
+    def move_node(self, node : ForestNode, new_parent : ForestNode):
+        self._validate_nodes(node, new_parent)
         node_parent = node._parent
         for desc in node._successors:
             desc.connect_to(node_parent)
         node.connect_to(new_parent)
 
-    def move_subtree(self, subroot : Node, new_parent : Node):
-        Forest._validate_nodes(subroot, new_parent)
+    def move_subtree(self, subroot : ForestNode, new_parent : ForestNode):
+        self._validate_nodes(subroot, new_parent)
         if subroot.is_ancestor(new_parent):
             raise Forest.CyclingMovement
         subroot.connect_to(new_parent)
 
-    def free_node(self, node : Node):
-        Forest._validate_nodes(node)
+    def free_node(self, node : ForestNode):
+        self._validate_nodes(node)
         node_parent = node._parent
         for desc in node._successors:
             desc.connect_to(node_parent)
         self._make_root(node)
 
-    def free_subtree(self, subroot : Node):
-        Forest._validate_nodes(subroot)
+    def free_subtree(self, subroot : ForestNode):
+        self._validate_nodes(subroot)
         self._make_root(subroot)
 
-    def delete_leafage(self, parent : Node):
-        Forest._validate_nodes(parent)
+    def delete_leafage(self, parent : ForestNode):
+        self._validate_nodes(parent)
         for desc in parent._successors:
             del desc
 
-    def delete_leaf(self, leaf : Node):
-        Forest._validate_nodes(leaf)
+    def delete_leaf(self, leaf : ForestNode):
+        self._validate_nodes(leaf)
         if leaf.is_parent():
             raise Forest.NotLeaf
         del leaf
 
-    def cut_node(self, node : Node):
-        Forest._validate_nodes(node)
+    def cut_node(self, node : ForestNode):
+        self._validate_nodes(node)
         if node.is_root():
             raise Forest.NotSuccessor
 
@@ -167,8 +168,8 @@ class Forest:
             desc.connect_to(node_parent)
         del node
 
-    def delete_subtree(self, subroot : Node):
-        Forest._validate_nodes(subroot)
+    def delete_subtree(self, subroot : ForestNode):
+        self._validate_nodes(subroot)
 
         for desc in subroot._successors:
             self.delete_subtree(desc)
@@ -209,17 +210,21 @@ class Forest:
 
 
     # Private part
-    @staticmethod
-    def _validate_nodes(*argv):
-        for arg in argv:
-            if arg is not Node:
-                raise Forest.NotNode
+    class ForestNode(Node):
+        def __init__(self, forest):
+            super().__init__()
+            self.forest = forest
 
+    def _create_node(self) -> ForestNode:
+        return Forest.ForestNode(self)
 
-    def _create_node(self) -> Node:
-        return Node()
-
-    def _make_root(self, node):
+    def _make_root(self, node : ForestNode):
         node.disconnect()
         self._roots.append(node)
 
+    def _validate_nodes(self, *argv):
+        for arg in argv:
+            if arg is not Node:
+                raise Forest.NotNode
+            if arg.forest != self:
+                raise Forest.AlienNode
