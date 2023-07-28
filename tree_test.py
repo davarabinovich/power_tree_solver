@@ -257,7 +257,25 @@ class TestNodeConnectTo(unittest.TestCase):
         self.assertEqual(NodeFullTreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullTreeMatcher(proper_alien_root), tested_alien_root)
 
-        # TODO: Cycling connection, connection removing last leaf
+    def test_reconnect_last_leaf(self):
+        tested_root = build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7])
+        tested_node = tested_root.successors[0].successors[0]
+        tested_parent = tested_root.successors[1]
+        proper_root = build_tree([1, 2, [5, 9], [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7])
+
+        tested_node.connect_to(tested_parent)
+        self.assertEqual(NodeFullTreeMatcher(proper_root), tested_root)
+
+    def test_reconnect_last_subtree(self):
+        tested_root = build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
+        tested_node = tested_root.successors[2].successors[1].successors[0]
+        tested_parent = tested_root.successors[0]
+        proper_root = build_tree([1, [2, 9, [6, 9, 0]], 5, [3, 4, 5, [2, 5, 9]], 7])
+
+        tested_node.connect_to(tested_parent)
+        self.assertEqual(NodeFullTreeMatcher(proper_root), tested_root)
+
+        # TODO: Cycling connection
 
 # TODO: Test deletion and other public methods
 class TestForest(unittest.TestCase):
