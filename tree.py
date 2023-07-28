@@ -6,6 +6,9 @@ from __future__ import annotations
 #       a usual tree with unordered node's leafage.
 
 class Node:
+    class ClosingTransition(Exception): pass
+
+
     def __init__(self):
         self._parent = None
         self._successors = []
@@ -13,6 +16,9 @@ class Node:
 
 
     def connect_to(self, parent: Node):
+        if self.is_ancestor(parent):
+            raise Node.ClosingTransition
+
         if type(self._parent) == Node:
             self._parent.successors.remove(self)
         self._parent = parent
@@ -31,8 +37,29 @@ class Node:
             cur_index = parent_successors.index(self)
             parent_successors[cur_index] = node
 
-        node_parent = node._parent
-        node._parent, self._parent = cur_parent, node_parent
+        node_parent = node.parent
+        if type(node_parent) == Node:
+            parent_successors = node_parent.successors
+            parent_successors.remove(node)
+
+        node.parent = cur_parent
+        self._parent = None
+
+    def swap_with(self, node: Node):
+        cur_parent = self._parent
+        if type(cur_parent) == Node:
+            parent_successors = cur_parent.successors
+            cur_index = parent_successors.index(self)
+            parent_successors[cur_index] = node
+
+        node_parent = node.parent
+        if type(node_parent) == Node:
+            parent_successors = node_parent.successors
+            cur_index = parent_successors.index(self)
+            parent_successors[cur_index] = node
+
+        node_parent = cur_parent
+        self._parent = node_parent
 
 
     def is_root(self):
@@ -77,7 +104,6 @@ class Forest:
     class NotNode(Exception): pass
     class NotLeaf(Exception): pass
     class NotSuccessor(Exception):pass
-    class ClosingTransition(Exception): pass
     class AlienNode(Exception): pass
 
 
@@ -87,6 +113,7 @@ class Forest:
             self._roots.append(self._create_node())
 
 
+    # TODO: Optimize all modificating functions with for loops
     def create_root(self) -> _ForestNode:
         self._roots.append(self._create_node())
         return self._roots[-1]
@@ -97,19 +124,19 @@ class Forest:
         leaf.connect_to(parent)
         return leaf
 
-    def insert_node_before(self, successor: _ForestNode) -> _ForestNode:
-        self._validate_nodes(successor)
+    def insert_node_before(self, new_successor: _ForestNode) -> _ForestNode:
+        self._validate_nodes(new_successor)
         new_node = self._create_node()
-        successor.replace_with(new_node)
-        successor.connect_to(new_node)
+        new_successor.replace_with(new_node)
+        new_successor.connect_to(new_node)
         return new_node
 
-    def insert_node_after(self, parent: _ForestNode) -> _ForestNode:
-        self._validate_nodes(parent)
+    def insert_node_after(self, new_parent: _ForestNode) -> _ForestNode:
+        self._validate_nodes(new_parent)
 
         new_node = self._create_node()
-        new_node.connect_to(parent)
-        parent_successors = parent.successors
+        new_node.connect_to(new_parent)
+        parent_successors = new_parent.successors
         for successor in parent_successors:
             successor.connect_to(new_node)
 
@@ -124,8 +151,6 @@ class Forest:
 
     def move_subtree(self, subroot: _ForestNode, new_parent: _ForestNode):
         self._validate_nodes(subroot, new_parent)
-        if subroot.is_ancestor(new_parent):
-            raise Forest.ClosingTransition
         subroot.connect_to(new_parent)
 
     def free_node(self, node: _ForestNode):
