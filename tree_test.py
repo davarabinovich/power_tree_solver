@@ -44,6 +44,7 @@ class NodeFullSubtreeMatcher:
         return True
 
 
+# TODO: Validate rising links after every modification
 class TestNodeDisconnect(unittest.TestCase):
     def test_disconnect_leaf_from_none(self):
         tested_node = build_tree([3])
@@ -311,9 +312,7 @@ class TestNodeReplaceWith(unittest.TestCase):
 
         tested_root.replace_with(tested_node)
         self.assertEqual(None, tested_root.parent)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
 
     def test_replace_root_with_leaf(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
@@ -323,9 +322,7 @@ class TestNodeReplaceWith(unittest.TestCase):
 
         tested_root.replace_with(tested_node)
         self.assertEqual(None, tested_root.parent)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
 
     def test_replace_subtree_with_node_above(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
@@ -335,9 +332,7 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_node = build_tree([8, 5, 7, 2])
 
         tested_node.replace_with(replacement)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
 
     def test_replace_subtree_with_node_below(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
@@ -347,9 +342,7 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_node = build_tree([2, 9, [8, 5, 7, 2], 8])
 
         tested_node.replace_with(replacement)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
 
     def test_replace_subtree_with_leaf(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
@@ -359,9 +352,7 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_node = build_tree([7])
 
         tested_node.replace_with(replacement)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
 
     def test_replace_leaf_with_subtree(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
@@ -371,9 +362,7 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_node = build_tree([4])
 
         tested_node.replace_with(replacement)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
 
     def test_replace_leaf_with_leaf(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
@@ -383,9 +372,7 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_node = build_tree([7])
 
         tested_node.replace_with(replacement)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
 
     def test_replace_node_with_alien_subtree(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
@@ -398,9 +385,7 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_alien_root = build_tree([5, 3, [2, 6, 9, 0], 4, [2, 0, 4]])
 
         tested_node.replace_with(replacement)
-        self.assertEqual(None, tested_node.parent)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
-        self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_alien_root), alien_root)
 
     def test_closing_replace(self):
@@ -411,13 +396,51 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_node = build_tree([2, 9, 8])
 
         tested_node.replace_with(replacement)
+        self.fully_assert(tested_node, tested_root, proper_node, proper_root)
+
+
+    def fully_assert(self, tested_node: Node, tested_root: Node, proper_node: Node, proper_root: Node):
         self.assertEqual(None, tested_node.parent)
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
 
 
+class TestNodeSwapWith(unittest.TestCase):
+    def test_swap_nodes_inside_tree(self):
+        tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        tested_node = tested_root.successors[0]
+        partner = tested_root.successors[2].successors[1]
+        proper_root = build_tree([1, [5, 6, 7], 5, [3, 4, [2, 9, [8, 5, 7, 2], 8], [2, 5, 9]], 7])
 
+        tested_node.swap_with(partner)
+        self.assertEqual(NodeFullSubtreeMatcher(tested_root), proper_root)
 
+    def test_swap_nodes_between_trees(self):
+        tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        tested_node = tested_root.successors[0].successors[1]
+        alien_root = build_tree([5, 3, [2, 6, 9, 0], 4, [2, 0, [1, 2, 4], 4]])
+        partner = alien_root.successors[3].successors[1]
+
+        proper_root = build_tree([1, [2, 9, [1, 2, 4], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        proper_alien_root = build_tree([5, 3, [2, 6, 9, 0], 4, [2, 0, [8, 5, 7, 2], 4]])
+
+        tested_node.swap_with(partner)
+        self.assertEqual(NodeFullSubtreeMatcher(tested_root), proper_root)
+        self.assertEqual(NodeFullSubtreeMatcher(alien_root), proper_alien_root)
+
+    def test_closing_swap_node_down(self):
+        tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        tested_node = tested_root.successors[0]
+        partner = tested_root.successors[0].successors[1]
+        with self.assertRaises(Node.ClosingTransition):
+            tested_root.swap_with(partner)
+
+    def test_closing_swap_node_up(self):
+        tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        tested_node = tested_root.successors[0].successors[1]
+        partner = tested_root.successors[0]
+        with self.assertRaises(Node.ClosingTransition):
+            tested_root.swap_with(partner)
 
 # TODO: Test deletion and other public methods
 class TestForest(unittest.TestCase):

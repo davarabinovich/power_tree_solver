@@ -46,6 +46,11 @@ class Node:
         self._parent = None
 
     def swap_with(self, node: Node):
+        if self.is_ancestor(node):
+            raise Node.ClosingTransition
+        if node.is_ancestor(self):
+            raise Node.ClosingTransition
+
         cur_parent = self._parent
         if type(cur_parent) == Node:
             parent_successors = cur_parent.successors
@@ -55,8 +60,8 @@ class Node:
         node_parent = node.parent
         if type(node_parent) == Node:
             parent_successors = node_parent.successors
-            cur_index = parent_successors.index(self)
-            parent_successors[cur_index] = node
+            cur_index = parent_successors.index(node)
+            parent_successors[cur_index] = self
 
         node_parent = cur_parent
         self._parent = node_parent
