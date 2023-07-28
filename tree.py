@@ -1,6 +1,9 @@
 
 from __future__ import annotations
 
+# TODO: Write disclamer about order of successors - this module is implemented with ordered successors and tested with
+#       assumption of that they're ordered, but doesn't have any methods to change this order, and the developer meant
+#       a usual tree with unordered node's leafage.
 
 class Node:
     def __init__(self):
@@ -10,7 +13,7 @@ class Node:
 
 
     def connect_to(self, parent: Node):
-        if self._parent is Node:
+        if type(self._parent) == Node:
             self._parent.successors.remove(self)
         self._parent = parent
         parent._successors.append(self)
@@ -23,7 +26,7 @@ class Node:
 
     def replace_with(self, node: Node):
         cur_parent = self._parent
-        if cur_parent is Node:
+        if type(cur_parent) == Node:
             parent_successors = cur_parent.successors
             cur_index = parent_successors.index(self)
             parent_successors[cur_index] = node
@@ -40,9 +43,10 @@ class Node:
 
     def is_ancestor(self, second: Node):
         cur_parent = second._parent
-        while cur_parent is not None:
+        while type(cur_parent) == Node:
             if cur_parent == self:
                 return True
+            cur_parent = cur_parent._parent
         return False
 
 
@@ -73,7 +77,7 @@ class Forest:
     class NotNode(Exception): pass
     class NotLeaf(Exception): pass
     class NotSuccessor(Exception):pass
-    class CyclingMovement(Exception): pass
+    class ClosingTransition(Exception): pass
     class AlienNode(Exception): pass
 
 
@@ -121,7 +125,7 @@ class Forest:
     def move_subtree(self, subroot: _ForestNode, new_parent: _ForestNode):
         self._validate_nodes(subroot, new_parent)
         if subroot.is_ancestor(new_parent):
-            raise Forest.CyclingMovement
+            raise Forest.ClosingTransition
         subroot.connect_to(new_parent)
 
     def free_node(self, node: _ForestNode):
@@ -254,7 +258,7 @@ class Forest:
 
     def _validate_nodes(self, *argv):
         for arg in argv:
-            if arg is not Node:
+            if type(arg) != Node:
                 raise Forest.NotNode
             if arg.get_forest_ref() != self:
                 raise Forest.AlienNode
