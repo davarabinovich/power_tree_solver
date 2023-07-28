@@ -23,7 +23,6 @@ def build_tree(subtrees, parent=None):
 
     return root
 
-
 class NodeFullSubtreeMatcher:
     expected: Node
 
@@ -43,6 +42,12 @@ class NodeFullSubtreeMatcher:
 
         return True
 
+def is_subtree_valid(root: Node):
+    for successor in root.successors:
+        if successor.parent != root:
+            return False
+        is_subtree_valid(successor)
+    return True
 
 # TODO: Validate rising links after every modification
 class TestNodeDisconnect(unittest.TestCase):
@@ -115,6 +120,7 @@ class TestNodeDisconnect(unittest.TestCase):
 
     def fully_assert(self, tested_node: Node, tested_root: Node, proper_node: Node, proper_root: Node):
         self.assertEqual(None, tested_node.parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
@@ -124,14 +130,18 @@ class TestNodeConnectTo(unittest.TestCase):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
         tested_node = tested_root.successors[2].successors[0]
         proper_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, [5, 6, 7], [2, 5, 9]], 7, 4])
+
         tested_node.connect_to(tested_root)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_subtree_to_root(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
         tested_node = tested_root.successors[0].successors[1]
         proper_root = build_tree([1, [2, 9, 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7, [8, 5, 7, 2]])
+
         tested_node.connect_to(tested_root)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_leaf_to_node_above(self):
@@ -141,6 +151,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, [2, 9, [8, 5, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9], 7], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_subtree_to_node_above(self):
@@ -150,6 +161,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 7], [2, 5, 9], [6, 9, 0]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_leaf_to_node_below(self):
@@ -159,6 +171,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7, 5], [2, 5, 9]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_subtree_to_node_below(self):
@@ -168,6 +181,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, [2, 9, 8], 5, [3, 4, [5, [6, [9, [8, 5, 7, 2]], 0], 7], [2, 5, 9]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_leaf_to_leaf(self):
@@ -177,6 +191,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, [9, 5]]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_subtree_to_leaf(self):
@@ -186,6 +201,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, [6, 9, 0], 7]], [7, [2, 5, 9]]])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_connect_leaf_to_alone_node(self):
@@ -196,6 +212,8 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_alien_root = build_tree([0, 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
+        self.assertTrue(is_subtree_valid(tested_parent))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_alien_root), tested_parent)
 
@@ -207,6 +225,8 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_alien_root = build_tree([0, [2, 5, 9]])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
+        self.assertTrue(is_subtree_valid(tested_parent))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_alien_root), tested_parent)
 
@@ -217,6 +237,8 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_alien_root = build_tree([0, [1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7]])
 
         tested_root.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
+        self.assertTrue(is_subtree_valid(tested_parent))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_alien_root), tested_parent)
 
@@ -242,6 +264,8 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_alien_root = build_tree([0, [9, [0, [2, 5, 9]], 4], [2, [2, 5, 6]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
+        self.assertTrue(is_subtree_valid(tested_alien_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_alien_root), tested_alien_root)
 
@@ -255,6 +279,8 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_alien_root = build_tree([0, [9, 0, 4], [2, [2, 5, [6, [2, 5, 9]]]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
+        self.assertTrue(is_subtree_valid(tested_alien_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_alien_root), tested_alien_root)
 
@@ -265,6 +291,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, 2, [5, 9], [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_reconnect_last_subtree(self):
@@ -274,6 +301,7 @@ class TestNodeConnectTo(unittest.TestCase):
         proper_root = build_tree([1, [2, 9, [6, 9, 0]], 5, [3, 4, 5, [2, 5, 9]], 7])
 
         tested_node.connect_to(tested_parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
 
     def test_closing_connection_subtree_to_leaf(self):
@@ -385,6 +413,7 @@ class TestNodeReplaceWith(unittest.TestCase):
         proper_alien_root = build_tree([5, 3, [2, 6, 9, 0], 4, [2, 0, 4]])
 
         tested_node.replace_with(replacement)
+        self.assertTrue(is_subtree_valid(alien_root))
         self.fully_assert(tested_node, tested_root, proper_node, proper_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_alien_root), alien_root)
 
@@ -401,6 +430,7 @@ class TestNodeReplaceWith(unittest.TestCase):
 
     def fully_assert(self, tested_node: Node, tested_root: Node, proper_node: Node, proper_root: Node):
         self.assertEqual(None, tested_node.parent)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(proper_root), tested_root)
         self.assertEqual(NodeFullSubtreeMatcher(proper_node), tested_node)
 
@@ -413,6 +443,7 @@ class TestNodeSwapWith(unittest.TestCase):
         proper_root = build_tree([1, [5, 6, 7], 5, [3, 4, [2, 9, [8, 5, 7, 2], 8], [2, 5, 9]], 7])
 
         tested_node.swap_with(partner)
+        self.assertTrue(is_subtree_valid(tested_root))
         self.assertEqual(NodeFullSubtreeMatcher(tested_root), proper_root)
 
     def test_swap_nodes_between_trees(self):
