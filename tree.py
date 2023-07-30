@@ -63,7 +63,7 @@ class Node:
             cur_index = parent_successors.index(node)
             parent_successors[cur_index] = self
 
-        node_parent = cur_parent
+        node.parent = cur_parent
         self._parent = node_parent
 
 

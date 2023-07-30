@@ -464,18 +464,68 @@ class TestNodeSwapWith(unittest.TestCase):
         tested_node = tested_root.successors[0]
         partner = tested_root.successors[0].successors[1]
         with self.assertRaises(Node.ClosingTransition):
-            tested_root.swap_with(partner)
+            tested_node.swap_with(partner)
 
     def test_closing_swap_node_up(self):
         tested_root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
         tested_node = tested_root.successors[0].successors[1]
         partner = tested_root.successors[0]
         with self.assertRaises(Node.ClosingTransition):
-            tested_root.swap_with(partner)
+            tested_node.swap_with(partner)
 
-# TODO: Test deletion and other public methods
-class TestForest(unittest.TestCase):
-    pass
+
+class TestNodeReadOnlyMethods(unittest.TestCase):
+    def test_by_creation(self):
+        root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        inner_node = root.successors[0].successors[1]
+        leaf = root.successors[2].successors[1].successors[1]
+        free_node = build_tree([1])
+
+        self.assertTrue(root.is_root())
+        self.assertFalse(inner_node.is_root())
+        self.assertFalse(leaf.is_root())
+        self.assertTrue(free_node.is_root())
+
+        self.assertTrue(root.is_parent())
+        self.assertTrue(inner_node.is_parent())
+        self.assertFalse(leaf.is_parent())
+        self.assertFalse(free_node.is_parent())
+
+        self.assertTrue(root.is_ancestor(inner_node))
+        self.assertFalse(inner_node.is_ancestor(leaf))
+
+    def test_after_swapping(self):
+        root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        inner_node = root.successors[0].successors[1]
+        leaf = root.successors[2].successors[1].successors[1]
+        ancestor = root.successors[0]
+
+        inner_node.swap_with(leaf)
+        self.assertFalse(inner_node.is_root())
+        self.assertFalse(leaf.is_root())
+        self.assertTrue(inner_node.is_parent())
+        self.assertFalse(leaf.is_parent())
+
+        self.assertTrue(ancestor.is_ancestor(leaf))
+
+    def test_after_replacement(self):
+        root = build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        inner_node = root.successors[0].successors[1]
+
+        root.replace_with(inner_node)
+        self.assertTrue(root.is_root())
+        self.assertTrue(inner_node.is_root())
+        self.assertTrue(root.is_parent())
+        self.assertTrue(inner_node.is_parent())
+
+        self.assertFalse(root.is_ancestor(inner_node))
+
+
+# class TestForestCreateRoot(unittest.TestCase):
+#     def test_create_first_root(self):
+#         forest = Forest()
+#         forest.create_root()
+#         forest.
 
 class TestTree(unittest.TestCase):
     pass
