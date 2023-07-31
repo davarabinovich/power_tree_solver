@@ -9,10 +9,32 @@ class Node:
     class ClosingTransition(Exception): pass
 
 
-    def __init__(self):
+    def __init__(self, content=None):
         self._parent = None
         self._successors = []
-        self._content = None
+        self._content = content
+
+
+    @staticmethod
+    def build_tree(nodes_str: list, parent=None):
+        root = Node()
+        root.content = nodes_str[0]
+        nodes_str = nodes_str[1:]
+
+        if parent is not None:
+            parent.successors.append(root)
+            root.parent = parent
+
+        for subtree in nodes_str:
+            if type(subtree) == list:
+                Node.build_tree(subtree, root)
+            else:
+                successor = Node()
+                successor.content = subtree
+                root.successors.append(successor)
+                successor.parent = root
+
+        return root
 
 
     def connect_to(self, parent: Node):
@@ -118,9 +140,18 @@ class Forest:
             self._roots.append(self._create_node())
 
 
+    @staticmethod
+    def build_forest(*argv: list, parent=None, ):
+        forest = Forest()
+        for root in argv:
+            forest._roots.append(root[0])
+            Forest._build_tree(root, forest)
+        return forest
+
+
     # TODO: Optimize all modificating functions with for loops
-    def create_root(self) -> _ForestNode:
-        self._roots.append(self._create_node())
+    def create_root(self, content=None) -> _ForestNode:
+        self._roots.append(self._create_node(content))
         return self._roots[-1]
 
     def add_leaf(self, parent: _ForestNode) -> _ForestNode:
@@ -255,8 +286,8 @@ class Forest:
 
     # Private part
     class _ForestNode(Node):
-        def __init__(self, forest):
-            super().__init__()
+        def __init__(self, forest, content=None):
+            super().__init__(content)
             self._forest = forest
 
         def set_forest_ref(self, new_forest_ref):
@@ -265,8 +296,30 @@ class Forest:
         def get_forest_ref(self):
             return self._forest
 
-    def _create_node(self) -> _ForestNode:
-        return Forest._ForestNode(self)
+    # TODO: Combine with Node.build_tree
+    @staticmethod
+    def _build_tree(nodes_str: list, forest: Forest, parent=None):
+        root = Forest._ForestNode(forest)
+        root.content = nodes_str[0]
+        nodes_str = nodes_str[1:]
+
+        if parent is not None:
+            parent.successors.append(root)
+            root.parent = parent
+
+        for subtree in nodes_str:
+            if type(subtree) == list:
+                Forest._build_tree(subtree, forest, root)
+            else:
+                successor = Forest._ForestNode(forest)
+                successor.content = subtree
+                root.successors.append(successor)
+                successor.parent = root
+
+        return root
+
+    def _create_node(self, content=None) -> _ForestNode:
+        return Forest._ForestNode(self, content)
 
     def _delete_node(self, node: _ForestNode):
         node.set_forest_ref(None)
