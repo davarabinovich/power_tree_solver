@@ -3,34 +3,6 @@ import unittest
 from tree import *
 
 
-# class NodeFullForestMatcher:
-#     expected: Forest
-#
-#     def __init__(self, expected):
-#         self.expected = expected
-#
-#     def __eq__(self, other: Forest):
-#         if not is_forest_valid(self.expected):
-#             return False
-#         if not is_forest_valid(other):
-#             return False
-#
-#         for len(self.expected._roots) != len(other.roots):
-#             return False
-#
-#         if self.expected.content != other.content:
-#             return False
-#         if len(self.expected.successors) != len(other.successors):
-#             return False
-#
-#         for index in range(len(self.expected.successors)):
-#             successor_matcher = self.expected.successors[index])
-#             if not successor_matcher.__eq__(other.successors[index]):
-#                 return False
-#
-#         return True
-
-
 def is_subtree_valid(root: Node):
     for successor in root.successors:
         if successor.parent != root:
@@ -39,8 +11,10 @@ def is_subtree_valid(root: Node):
     return True
 
 def is_forest_valid(forest: Forest):
-    for root in forest.roots():
-        is_forest_tree_valid(root, forest)
+    for root in forest.roots:
+        if not is_forest_tree_valid(root, forest):
+            return False
+    return True
 
 def is_forest_tree_valid(root: Forest._ForestNode, forest:Forest):
     if root.get_forest_ref() != forest:
@@ -528,12 +502,13 @@ class TestNodeReadOnlyMethods(unittest.TestCase):
         self.assertFalse(root.is_ancestor(inner_node))
 
 
-# class TestForestCreateRoot(unittest.TestCase):
-#     def test_create_first_root(self):
-#         tested_forest = Forest.build_forest()
-#         proper_forest = Forest.build_forest([5])
-#         tested_forest.create_root(5)
-#         self.assertEqual(proper_forest, tested_forest)
+class TestForestCreateRoot(unittest.TestCase):
+    def test_create_first_root(self):
+        tested_forest = Forest.build_forest()
+        proper_forest = Forest.build_forest([5])
+        tested_forest.create_root(5)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
 
 
 

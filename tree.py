@@ -16,16 +16,16 @@ class Node:
 
 
     @staticmethod
-    def build_tree(nodes_str: list, parent=None):
+    def build_tree(nodes_list: list, parent=None):
         root = Node()
-        root.content = nodes_str[0]
-        nodes_str = nodes_str[1:]
+        root.content = nodes_list[0]
+        nodes_list = nodes_list[1:]
 
         if parent is not None:
             parent.successors.append(root)
             root.parent = parent
 
-        for subtree in nodes_str:
+        for subtree in nodes_list:
             if type(subtree) == list:
                 Node.build_tree(subtree, root)
             else:
@@ -146,18 +146,19 @@ class Forest:
     class AlienNode(Exception): pass
 
 
-    def __init__(self, is_root=True):
-        self._roots = []
-        if is_root:
+    def __init__(self, root=None):
+        if root is None:
+            self._roots = []
+        else:
             self._roots.append(self._create_node())
 
 
     @staticmethod
-    def build_forest(*argv: list, parent=None, ):
+    def build_forest(*argv: list):
         forest = Forest()
-        for root in argv:
-            forest._roots.append(root[0])
-            Forest._build_tree(root, forest)
+        for tree in argv:
+            root = Forest._build_tree(tree, forest)
+            forest._roots.append(root)
         return forest
 
 
@@ -295,6 +296,15 @@ class Forest:
         self._cur_node = self._cur_node.parent.successors[self._cur_indices[-1]]
         return self._cur_node
 
+    def __eq__(self, other: Forest):
+        if len(self._roots) != len(other._roots):
+            return False
+
+        for index in range(len(self._roots)):
+            if not self._roots[index].__eq__(other._roots[index]):
+                return False
+        return True
+
 
     @property
     def roots(self):
@@ -303,7 +313,7 @@ class Forest:
 
     # Private part
     class _ForestNode(Node):
-        def __init__(self, forest, content=None):
+        def __init__(self, forest: Forest, content=None):
             super().__init__(content)
             self._forest = forest
 
@@ -315,20 +325,20 @@ class Forest:
 
     # TODO: Combine with Node.build_tree
     @staticmethod
-    def _build_tree(nodes_str: list, forest: Forest, parent=None):
+    def _build_tree(nodes_list: list, forest: Forest, parent=None):
         root = Forest._ForestNode(forest)
-        root.content = nodes_str[0]
-        nodes_str = nodes_str[1:]
+        root.content = nodes_list[0]
+        nodes_list = nodes_list[1:]
 
         if parent is not None:
             parent.successors.append(root)
             root.parent = parent
 
-        for subtree in nodes_str:
+        for subtree in nodes_list:
             if type(subtree) == list:
-                Forest._build_tree(subtree, forest, root)
+                Node.build_tree(subtree, root)
             else:
-                successor = Forest._ForestNode(forest)
+                successor = Node()
                 successor.content = subtree
                 root.successors.append(successor)
                 successor.parent = root
