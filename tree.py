@@ -104,6 +104,18 @@ class Node:
         return False
 
 
+    def __eq__(self, other: Node):
+        if self.content != other.content:
+            return False
+        if len(self.successors) != len(other.successors):
+            return False
+
+        for index in range(len(self.successors)):
+            if not self.successors[index].__eq__(other.successors[index]):
+                return False
+
+        return True
+
     @property
     def content(self):
         return self._content
@@ -282,6 +294,11 @@ class Forest:
         self._cur_indices[-1] += 1
         self._cur_node = self._cur_node.parent.successors[self._cur_indices[-1]]
         return self._cur_node
+
+
+    @property
+    def roots(self):
+        return self._roots
 
 
     # Private part
