@@ -40,13 +40,15 @@ class Node:
 
 
     def connect_to(self, parent: Node):
-        if self.is_ancestor(parent):
-            raise Node.ClosingTransition
+        if isinstance(parent, Node):
+            if self.is_ancestor(parent):
+                raise Node.ClosingTransition
 
         if isinstance(self._parent, Node):
             self._parent.successors.remove(self)
         self._parent = parent
-        parent._successors.append(self)
+        if isinstance(parent, Node):
+            parent._successors.append(self)
 
     def disconnect(self):
         if self._parent is None:
@@ -142,7 +144,7 @@ class Node:
     def successors(self, value):
         self._successors = value
 
-
+# TODO: Rework with fictive root of roots to simplify modification method's code
 class Forest:
     # Public interface
     class NotNode(Exception): pass
@@ -222,17 +224,26 @@ class Forest:
 
     def move_subtree(self, subroot: _ForestNode, new_parent: _ForestNode):
         self._validate_nodes(subroot, new_parent)
-        if subroot.is_root():
-            self._roots.remove(subroot)
+        is_root = subroot.is_root()
         subroot.connect_to(new_parent)
-
+        if is_root:
+            self._roots.remove(subroot)
 
     def free_node(self, node: _ForestNode):
         self._validate_nodes(node)
         node_parent = node.parent
+
+        temp_node_successors = []
         for successor in node.successors:
+            temp_node_successors.append(successor)
+        for successor in temp_node_successors:
             successor.connect_to(node_parent)
-        self._make_root(node)
+
+        if node.is_root():
+            for successor in temp_node_successors:
+                self._make_root(successor)
+        else:
+            self._make_root(node)
 
     def free_subtree(self, subroot: _ForestNode):
         self._validate_nodes(subroot)
