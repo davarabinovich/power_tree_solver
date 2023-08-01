@@ -5,6 +5,8 @@ from __future__ import annotations
 #       assumption of that they're ordered, but doesn't have any methods to change this order, and the developer meant
 #       a usual tree with unordered node's leafage.
 
+# TODO: Rework to _successors be a set
+# TODO: Implement convenient tools for tree structure visualization
 class Node:
     class ClosingTransition(Exception): pass
 
@@ -41,7 +43,7 @@ class Node:
         if self.is_ancestor(parent):
             raise Node.ClosingTransition
 
-        if type(self._parent) == Node:
+        if isinstance(self._parent, Node):
             self._parent.successors.remove(self)
         self._parent = parent
         parent._successors.append(self)
@@ -54,13 +56,13 @@ class Node:
 
     def replace_with(self, node: Node):
         cur_parent = self._parent
-        if type(cur_parent) == Node:
+        if isinstance(cur_parent, Node):
             parent_successors = cur_parent.successors
             cur_index = parent_successors.index(self)
             parent_successors[cur_index] = node
 
         node_parent = node.parent
-        if type(node_parent) == Node:
+        if isinstance(node_parent, Node):
             parent_successors = node_parent.successors
             parent_successors.remove(node)
 
@@ -74,13 +76,13 @@ class Node:
             raise Node.ClosingTransition
 
         cur_parent = self._parent
-        if type(cur_parent) == Node:
+        if isinstance(cur_parent, Node):
             parent_successors = cur_parent.successors
             cur_index = parent_successors.index(self)
             parent_successors[cur_index] = node
 
         node_parent = node.parent
-        if type(node_parent) == Node:
+        if isinstance(node_parent, Node):
             parent_successors = node_parent.successors
             cur_index = parent_successors.index(node)
             parent_successors[cur_index] = self
@@ -92,12 +94,15 @@ class Node:
     def is_root(self):
         return self._parent is None
 
+    def is_successor(self):
+        return self._parent is not None
+
     def is_parent(self):
         return len(self._successors) > 0
 
     def is_ancestor(self, second: Node):
         cur_parent = second._parent
-        while type(cur_parent) == Node:
+        while isinstance(cur_parent, Node):
             if cur_parent == self:
                 return True
             cur_parent = cur_parent._parent
@@ -167,35 +172,52 @@ class Forest:
         self._roots.append(self._create_node(content))
         return self._roots[-1]
 
-    def add_leaf(self, parent: _ForestNode) -> _ForestNode:
+    def add_leaf(self, parent: _ForestNode, content=None) -> _ForestNode:
         self._validate_nodes(parent)
-        leaf = self._create_node()
+        leaf = self._create_node(content)
         leaf.connect_to(parent)
         return leaf
 
-    def insert_node_before(self, new_successor: _ForestNode) -> _ForestNode:
+    def insert_node_before(self, new_successor: _ForestNode, content=None) -> _ForestNode:
         self._validate_nodes(new_successor)
-        new_node = self._create_node()
+
+        new_node = self._create_node(content)
+        if new_successor.is_root():
+            index = self._roots.index(new_successor)
+            self._roots[index] = new_node
+
         new_successor.replace_with(new_node)
         new_successor.connect_to(new_node)
         return new_node
 
-    def insert_node_after(self, new_parent: _ForestNode) -> _ForestNode:
+    def insert_node_after(self, new_parent: _ForestNode, content=None) -> _ForestNode:
         self._validate_nodes(new_parent)
+        new_node = self._create_node(content)
 
-        new_node = self._create_node()
-        new_node.connect_to(new_parent)
-        parent_successors = new_parent.successors
-        for successor in parent_successors:
+        temp_parent_successors = []
+        for successor in new_parent.successors:
+            temp_parent_successors.append(successor)
+        for successor in temp_parent_successors:
             successor.connect_to(new_node)
 
+        new_node.connect_to(new_parent)
         return new_node
 
     def move_node(self, node: _ForestNode, new_parent: _ForestNode):
         self._validate_nodes(node, new_parent)
-        node_parent = node.parent
+        temp_node_successors = []
         for successor in node.successors:
-            successor.connect_to(node_parent)
+            temp_node_successors.append(successor)
+
+        if node.is_successor():
+            for successor in temp_node_successors:
+                node_parent = node.parent
+                successor.connect_to(node_parent)
+        else:
+            self._roots.remove(node)
+            for successor in temp_node_successors:
+                self._make_root(successor)
+
         node.connect_to(new_parent)
 
     def move_subtree(self, subroot: _ForestNode, new_parent: _ForestNode):
@@ -336,9 +358,9 @@ class Forest:
 
         for subtree in nodes_list:
             if type(subtree) == list:
-                Node.build_tree(subtree, root)
+                Forest._build_tree(subtree, forest, root)
             else:
-                successor = Node()
+                successor = Forest._ForestNode(forest)
                 successor.content = subtree
                 root.successors.append(successor)
                 successor.parent = root
@@ -368,9 +390,9 @@ class Forest:
 
     def _validate_nodes(self, *argv):
         for arg in argv:
-            if type(arg) != Node:
+            if type(arg) != Forest._ForestNode:
                 raise Forest.NotNode
-            if arg.get_forest_ref() != self:
+            if id(arg.get_forest_ref()) != id(self):
                 raise Forest.AlienNode
 
 

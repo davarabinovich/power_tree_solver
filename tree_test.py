@@ -467,6 +467,11 @@ class TestNodeReadOnlyMethods(unittest.TestCase):
         self.assertFalse(leaf.is_root())
         self.assertTrue(free_node.is_root())
 
+        self.assertFalse(root.is_successor())
+        self.assertTrue(inner_node.is_successor())
+        self.assertTrue(leaf.is_successor())
+        self.assertFalse(free_node.is_successor())
+
         self.assertTrue(root.is_parent())
         self.assertTrue(inner_node.is_parent())
         self.assertFalse(leaf.is_parent())
@@ -480,25 +485,29 @@ class TestNodeReadOnlyMethods(unittest.TestCase):
         inner_node = root.successors[0].successors[1]
         leaf = root.successors[2].successors[1].successors[1]
         ancestor = root.successors[0]
-
         inner_node.swap_with(leaf)
+
         self.assertFalse(inner_node.is_root())
         self.assertFalse(leaf.is_root())
+        self.assertTrue(inner_node.is_successor())
+        self.assertTrue(leaf.is_successor())
+
         self.assertTrue(inner_node.is_parent())
         self.assertFalse(leaf.is_parent())
-
         self.assertTrue(ancestor.is_ancestor(leaf))
 
     def test_after_replacement(self):
         root = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
         inner_node = root.successors[0].successors[1]
-
         root.replace_with(inner_node)
+
         self.assertTrue(root.is_root())
         self.assertTrue(inner_node.is_root())
+        self.assertFalse(root.is_successor())
+        self.assertFalse(inner_node.is_successor())
+
         self.assertTrue(root.is_parent())
         self.assertTrue(inner_node.is_parent())
-
         self.assertFalse(root.is_ancestor(inner_node))
 
 
@@ -510,8 +519,156 @@ class TestForestCreateRoot(unittest.TestCase):
         self.assertTrue(is_forest_valid(tested_forest))
         self.assertEqual(proper_forest, tested_forest)
 
+    def test_create_additional_roots(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]], [4])
+        tested_forest.create_root(4)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
 
 
+class TestForestAddLeaf(unittest.TestCase):
+    def test_add_leaf_to_parent(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9, 4]])
+        parent = tested_forest.roots[2].successors[2]
+        tested_forest.add_leaf(parent, 4)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_add_leaf_to_leaf(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5, 4], [3, 4, [5, 6, 7], [2, 5, 9]])
+        parent = tested_forest.roots[1]
+        tested_forest.add_leaf(parent, 4)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_add_leaf_to_alien_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        parent = alien_forest.roots[2].successors[2]
+        with self.assertRaises(Forest.AlienNode):
+            tested_forest.add_leaf(parent, 4)
+
+
+class TestForestInsertNodeBefore(unittest.TestCase):
+    def test_insert_node_before_root(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([0, [2, 9, [8, 5, 7, 2], 8]], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_node = tested_forest.roots[0]
+
+        tested_forest.insert_node_before(tested_node, 0)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_insert_node_before_inner_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, [0, 4], [5, 6, 7], [2, 5, 9]])
+        tested_node = tested_forest.roots[2].successors[0]
+
+        tested_forest.insert_node_before(tested_node, 0)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def insert_node_before_alien_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        successor = alien_forest.roots[2].successors[2]
+        with self.assertRaises(Forest.AlienNode):
+            tested_forest.insert_node_before(successor, 4)
+
+
+class TestForestInsertNodeAfter(unittest.TestCase):
+    def test_insert_node_after_inner_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, [0, 5, 7, 2]], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_node = tested_forest.roots[0].successors[1]
+
+        tested_forest.insert_node_after(tested_node, 0)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def insert_node_after_alien_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        parent = alien_forest.roots[2].successors[2]
+        with self.assertRaises(Forest.AlienNode):
+            tested_forest.insert_node_after(parent, 4)
+
+
+class TestForestMoveNode(unittest.TestCase):
+    def test_move_root_with_successors_to_inner_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([5], [3, 4, [5, 6, 7], [2, 5, 9], 2], [9], [8, 5, 7, 2], [8])
+        tested_node = tested_forest.roots[0]
+        tested_parent = tested_forest.roots[2]
+
+        tested_forest.move_node(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_move_inner_node_to_leaf(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5, 3], [4], [5, 6, 7], [2, 5, 9])
+        tested_node = tested_forest.roots[2]
+        tested_parent = tested_forest.roots[1]
+
+        tested_forest.move_node(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_move_leaf_to_inner_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2, 5], 8], [5], [3, 4, [5, 6, 7], [2, 9]])
+        tested_node = tested_forest.roots[2].successors[2].successors[0]
+        tested_parent = tested_forest.roots[0].successors[1]
+
+        tested_forest.move_node(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_closing_move_ancestor_below(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, 8, 5, [7, 8], 2], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_node = tested_forest.roots[0].successors[1]
+        tested_parent = tested_forest.roots[0].successors[1].successors[1]
+
+        tested_forest.move_node(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_move_descendant_above(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 7], [2, 5, 9], 6])
+        tested_node = tested_forest.roots[2].successors[1].successors[0]
+        tested_parent = tested_forest.roots[2]
+
+        tested_forest.move_node(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_move_node_to_alien_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_node = tested_forest.roots[2].successors[1].successors[0]
+        parent = alien_forest.roots[2].successors[2]
+        with self.assertRaises(Forest.AlienNode):
+            tested_forest.move_node(tested_node, parent)
+
+
+class TestForestMoveSubtree(unittest.TestCase):
+    pass
+
+    # def test_(self):
+        # tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        # proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        # tested_node = tested_forest.roots[].successors[].successors[].successors[].successors[]
+        # tested_parent = tested_forest.roots[].successors[].successors[].successors[].successors[]
+
+        # tested_forest.(tested_node, tested_parent)
+        # self.assertTrue(is_forest_valid(tested_forest))
+        # self.assertEqual(proper_forest, tested_forest)
 
 class TestTree(unittest.TestCase):
     pass
