@@ -222,7 +222,10 @@ class Forest:
 
     def move_subtree(self, subroot: _ForestNode, new_parent: _ForestNode):
         self._validate_nodes(subroot, new_parent)
+        if subroot.is_root():
+            self._roots.remove(subroot)
         subroot.connect_to(new_parent)
+
 
     def free_node(self, node: _ForestNode):
         self._validate_nodes(node)

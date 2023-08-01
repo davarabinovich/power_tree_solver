@@ -2,7 +2,7 @@
 import unittest
 from tree import *
 
-
+# TODO: Check, that any exception cancells all modifications!!!
 def is_subtree_valid(root: Node):
     for successor in root.successors:
         if successor.parent != root:
@@ -285,29 +285,42 @@ class TestNodeConnectTo(unittest.TestCase):
 
     def test_closing_connection_subtree_to_leaf(self):
         tested_root = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
+        tested_root_copy = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
         tested_node = tested_root.successors[2]
         tested_parent = tested_root.successors[2].successors[1].successors[0].successors[1]
+
         with self.assertRaises(Node.ClosingTransition):
             tested_node.connect_to(tested_parent)
+        self.assertEqual(tested_root, tested_root_copy)
+
 
     def test_closing_connection_subtree_to_subtree(self):
         tested_root = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
+        tested_root_copy = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
         tested_node = tested_root.successors[2]
         tested_parent = tested_root.successors[2].successors[1].successors[0]
+
         with self.assertRaises(Node.ClosingTransition):
             tested_node.connect_to(tested_parent)
+        self.assertEqual(tested_root, tested_root_copy)
 
     def test_closing_connection_root_to_leaf(self):
         tested_root = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
+        tested_root_copy = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
         tested_parent = tested_root.successors[2].successors[1].successors[0].successors[1]
+
         with self.assertRaises(Node.ClosingTransition):
             tested_root.connect_to(tested_parent)
+        self.assertEqual(tested_root, tested_root_copy)
 
     def test_closing_connection_root_to_subtree(self):
         tested_root = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
+        tested_root_copy = Node.build_tree([1, [2, 9], 5, [3, 4, [5, [6, 9, 0]], [2, 5, 9]], 7])
         tested_parent = tested_root.successors[2].successors[1].successors[0]
+
         with self.assertRaises(Node.ClosingTransition):
             tested_root.connect_to(tested_parent)
+        self.assertEqual(tested_root, tested_root_copy)
 
 
 class TestNodeReplaceWith(unittest.TestCase):
@@ -442,17 +455,23 @@ class TestNodeSwapWith(unittest.TestCase):
 
     def test_closing_swap_node_down(self):
         tested_root = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        tested_root_copy = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
         tested_node = tested_root.successors[0]
         partner = tested_root.successors[0].successors[1]
+
         with self.assertRaises(Node.ClosingTransition):
             tested_node.swap_with(partner)
+        self.assertEqual(tested_root, tested_root_copy)
 
     def test_closing_swap_node_up(self):
         tested_root = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        tested_root_copy = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
         tested_node = tested_root.successors[0].successors[1]
         partner = tested_root.successors[0]
+
         with self.assertRaises(Node.ClosingTransition):
             tested_node.swap_with(partner)
+        self.assertEqual(tested_root, tested_root_copy)
 
 
 class TestNodeReadOnlyMethods(unittest.TestCase):
@@ -546,10 +565,13 @@ class TestForestAddLeaf(unittest.TestCase):
 
     def test_add_leaf_to_alien_node(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_forest_copy = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         parent = alien_forest.roots[2].successors[2]
+
         with self.assertRaises(Forest.AlienNode):
             tested_forest.add_leaf(parent, 4)
+        self.assertEqual(tested_forest, tested_forest_copy)
 
 
 class TestForestInsertNodeBefore(unittest.TestCase):
@@ -573,10 +595,13 @@ class TestForestInsertNodeBefore(unittest.TestCase):
 
     def insert_node_before_alien_node(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_forest_copy = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         successor = alien_forest.roots[2].successors[2]
+
         with self.assertRaises(Forest.AlienNode):
             tested_forest.insert_node_before(successor, 4)
+        self.assertEqual(tested_forest, tested_forest_copy)
 
 
 class TestForestInsertNodeAfter(unittest.TestCase):
@@ -591,10 +616,13 @@ class TestForestInsertNodeAfter(unittest.TestCase):
 
     def insert_node_after_alien_node(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_forest_copy = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         parent = alien_forest.roots[2].successors[2]
+
         with self.assertRaises(Forest.AlienNode):
             tested_forest.insert_node_after(parent, 4)
+        self.assertEqual(tested_forest, tested_forest_copy)
 
 
 class TestForestMoveNode(unittest.TestCase):
@@ -650,15 +678,46 @@ class TestForestMoveNode(unittest.TestCase):
 
     def test_move_node_to_alien_node(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_forest_copy = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         alien_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         tested_node = tested_forest.roots[2].successors[1].successors[0]
         parent = alien_forest.roots[2].successors[2]
+
         with self.assertRaises(Forest.AlienNode):
             tested_forest.move_node(tested_node, parent)
+        self.assertEqual(tested_forest, tested_forest_copy)
 
 
 class TestForestMoveSubtree(unittest.TestCase):
-    pass
+    def test_move_root_to_root(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8, [3, 4, [5, 6, 7], [2, 5, 9]]], [5])
+        tested_node = tested_forest.roots[2]
+        tested_parent = tested_forest.roots[0]
+
+        tested_forest.move_subtree(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_move_root_to_leaf(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([5], [3, [4, [2, 9, [8, 5, 7, 2], 8]], [5, 6, 7], [2, 5, 9]])
+        tested_node = tested_forest.roots[0]
+        tested_parent = tested_forest.roots[2].successors[0]
+
+        tested_forest.move_subtree(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
+
+    def test_subtree_to_inner_node(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [2, 5, 9, [5, 6, 7]]])
+        tested_node = tested_forest.roots[2].successors[1]
+        tested_parent = tested_forest.roots[2].successors[2]
+
+        tested_forest.move_subtree(tested_node, tested_parent)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
 
     # def test_(self):
         # tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
