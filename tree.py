@@ -149,7 +149,6 @@ class Forest:
     # Public interface
     class NotNode(Exception): pass
     class NotLeaf(Exception): pass
-    class NotSuccessor(Exception):pass
     class AlienNode(Exception): pass
 
 
@@ -237,6 +236,13 @@ class Forest:
         for successor in temp_node_successors:
             self._make_root(successor)
 
+    def free_leaf(self, leaf: _ForestNode):
+        self._validate_nodes(leaf)
+        if leaf.is_parent():
+            raise Forest.NotLeaf
+        if leaf.is_successor():
+            self._make_root(leaf)
+
     def free_node(self, node: _ForestNode):
         self._validate_nodes(node)
         node_parent = node.parent
@@ -260,43 +266,30 @@ class Forest:
 
     def delete_leafage(self, parent: _ForestNode):
         self._validate_nodes(parent)
+        temp_node_successors = []
         for successor in parent.successors:
+            temp_node_successors.append(successor)
+        for successor in temp_node_successors:
             self._delete_subtree(successor)
-            # TODO:
-            # class A:
-            #     def __init__(self):
-            #         pass
-            #
-            #     def __del__(self):
-            #         print("Deleted")
-            #
-            # list_a = [A(), A(), A()]
-            # another_list_a = [A(), A(), A()]
-            # list_a.clear()
-            #
-            # output:
-            # Deleted
-            # Deleted
-            # Deleted
-            # Deleted
-            # Deleted
-            # Deleted
-            #
-            # Why six times?
 
     def delete_leaf(self, leaf: _ForestNode):
         self._validate_nodes(leaf)
         if leaf.is_parent():
             raise Forest.NotLeaf
+        if leaf.is_root():
+            self._roots.remove(leaf)
         self._delete_node(leaf)
 
     def cut_node(self, node: _ForestNode):
         self._validate_nodes(node)
         if node.is_root():
-            raise Forest.NotSuccessor
+            self._roots.remove(node)
 
         node_parent = node.parent
-        for successor in node.successors:
+        temp_node_successors = []
+        for successor in node_parent.successors:
+            temp_node_successors.append(successor)
+        for successor in temp_node_successors:
             successor.connect_to(node_parent)
         self._delete_node(node)
 
