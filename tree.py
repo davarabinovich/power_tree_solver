@@ -8,6 +8,7 @@ from __future__ import annotations
 # TODO: Rework to _successors be a set
 # TODO: Implement convenient tools for tree structure visualization
 class Node:
+    # Public interface
     class ClosingTransition(Exception): pass
 
 
@@ -15,6 +16,10 @@ class Node:
         self._parent = None
         self._successors = []
         self._content = content
+
+        self._cur_indices = None
+        self._cur_node = None
+        self._is_first_iteration = False
 
 
     @staticmethod
@@ -93,6 +98,39 @@ class Node:
         self._parent = node_parent
 
 
+    def __iter__(self):
+        self._cur_indices = [0]
+        self._cur_node = self
+        self._is_first_iteration = True
+        return self
+
+    def __next__(self):
+        result = self._cur_node
+
+        if self._is_on_itself():
+            if self._is_first_iteration:
+                self._is_first_iteration = False
+                if self.is_leaf():
+                    return result
+            else:
+                raise StopIteration
+
+        if self._cur_node.is_parent():
+            self._cur_indices.append(0)
+            self._cur_node = self._cur_node.successors[0]
+        elif not self._is_last_sibling():
+            self._go_to_next_sibling()
+        else:
+            while self._is_last_sibling():
+                self._cur_indices.pop(-1)
+                self._cur_node = self._cur_node.parent
+                if self._is_on_itself():
+                    return result
+            self._go_to_next_sibling()
+
+        return result
+
+
     def is_root(self):
         return self._parent is None
 
@@ -101,6 +139,10 @@ class Node:
 
     def is_parent(self):
         return len(self._successors) > 0
+
+    # TODO: Test it
+    def is_leaf(self):
+        return len(self._successors) == 0
 
     def is_ancestor(self, second: Node):
         cur_parent = second._parent
@@ -144,6 +186,19 @@ class Node:
     def successors(self, value):
         self._successors = value
 
+
+    # Private part
+    def _is_on_itself(self):
+        return id(self._cur_node) == id(self)
+
+    def _is_last_sibling(self):
+        return len(self._cur_node.parent.successors) - 1 == self._cur_indices[-1]
+
+    def _go_to_next_sibling(self):
+        self._cur_indices[-1] += 1
+        self._cur_node = self._cur_node.parent.successors[self._cur_indices[-1]]
+
+
 # TODO: Rework with fictive root of roots to simplify modification method's code
 class Forest:
     # Public interface
@@ -157,6 +212,9 @@ class Forest:
             self._roots = []
         else:
             self._roots.append(self._create_node())
+
+        self._cur_node = None
+        self._cur_tree = -1
 
 
     @staticmethod
@@ -307,34 +365,25 @@ class Forest:
 
 
     def __iter__(self):
-        self._cur_indices = [0]
-        self._cur_node = self._roots[0]
+        if len(self._roots) > 0:
+            self._roots[0].__iter__()
+            self._cur_node = self._roots[0]
+            self._cur_tree = 0
         return self
 
-    # TODO: Traverse by subroot with syntax identical to traverse by the whole tree
     def __next__(self):
-        if self._cur_node.is_parent():
-            self._cur_indices.append(0)
-            self._cur_node = self._cur_node.successors[0]
-            return self._cur_node
+        if self._cur_node is None:
+            raise StopIteration
 
-        self._cur_indices[-1] += 1
-        if len(self._cur_node.parent.successors)-1 >= self._cur_indices[-1]:
-            self._cur_node = self._cur_node.parent.successors[self._cur_indices[-1]]
-            return self._cur_node
+        try:
+            self._cur_node = self._roots[self._cur_tree].__next__()
+        except StopIteration:
+            self._cur_tree += 1
+            if len(self._roots) == self._cur_tree:
+                raise StopIteration
+            else:
+                self._cur_node = self._roots[self._cur_tree].__next__()
 
-        while len(self._cur_node.parent.successors)-1 == self._cur_indices[-1]:
-            self._cur_indices.pop(-1)
-            self._cur_node = self._cur_node.parent
-
-            if self._cur_node.is_root():
-                self._cur_indices[-1] += 1
-                if len(self._roots) == self._cur_indices[-1]:
-                    raise StopIteration
-                return self._roots[self._cur_indices[0]]
-
-        self._cur_indices[-1] += 1
-        self._cur_node = self._cur_node.parent.successors[self._cur_indices[-1]]
         return self._cur_node
 
     def __eq__(self, other: Forest):

@@ -3,6 +3,25 @@ import unittest
 from tree import *
 
 # TODO: Check, that any exception cancells all modifications!!!
+def convert_tree_list_to_flat_list(forest_list):
+    if type(forest_list) == list:
+        flat_list = [forest_list[0]]
+        forest_list = forest_list[1:]
+        for successor in forest_list:
+            suffix = convert_tree_list_to_flat_list(successor)
+            if type(suffix) == list:
+                flat_list += suffix
+            else:
+                flat_list.append(suffix)
+        return flat_list
+    return forest_list
+
+def convert_forest_list_to_flat_list(*argv):
+    flat_list = []
+    for root in argv:
+        flat_list += convert_tree_list_to_flat_list(root)
+    return flat_list
+
 def is_subtree_valid(root: Node):
     for successor in root.successors:
         if successor.parent != root:
@@ -530,6 +549,39 @@ class TestNodeReadOnlyMethods(unittest.TestCase):
         self.assertTrue(inner_node.is_parent())
         self.assertFalse(root.is_ancestor(inner_node))
 
+
+class TestNodeIteration(unittest.TestCase):
+    def test_iteration_by_alone_node(self):
+        tested_root = Node.build_tree([1])
+        proper_root_flat_view = convert_tree_list_to_flat_list([1])
+        tested_root_flat_view = []
+        for node in tested_root:
+            tested_root_flat_view.append(node.content)
+        self.assertEqual(tested_root_flat_view, proper_root_flat_view)
+
+    def test_iteration_by_list(self):
+        tested_root = Node.build_tree([1, [2, [8, 5]]])
+        proper_root_flat_view = convert_tree_list_to_flat_list([1, [2, [8, 5]]])
+        tested_root_flat_view = []
+        for node in tested_root:
+            tested_root_flat_view.append(node.content)
+        self.assertEqual(tested_root_flat_view, proper_root_flat_view)
+
+    def test_iteration_by_simple_tree(self):
+        tested_root = Node.build_tree([1, 2, 9, 8])
+        proper_root_flat_view = convert_tree_list_to_flat_list([1, 2, 9, 8])
+        tested_root_flat_view = []
+        for node in tested_root:
+            tested_root_flat_view.append(node.content)
+        self.assertEqual(tested_root_flat_view, proper_root_flat_view)
+
+    def test_iteration_by_complex_tree(self):
+        tested_root = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        proper_root_flat_view = convert_tree_list_to_flat_list([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        tested_root_flat_view = []
+        for node in tested_root:
+            tested_root_flat_view.append(node.content)
+        self.assertEqual(tested_root_flat_view, proper_root_flat_view)
 
 # TODO: Check equivalency of work of two different methods where it's possible
 class TestForestCreateRoot(unittest.TestCase):
@@ -1183,16 +1235,33 @@ class TestForestDeleteSubtree(unittest.TestCase):
         self.assertEqual(alien_forest, alien_forest_copy)
 
 
+class TestForestIteration(unittest.TestCase):
+    def test_iteration_empty_forest(self):
+        tested_forest = Forest()
+        proper_forest_flat_view = []
+        tested_forest_flat_view = []
+        for node in tested_forest:
+            tested_forest_flat_view.append(node.content)
+        self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
 
-    # def test_(self):
-        # tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
-        # proper_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
-        # tested_node = tested_forest.roots[].successors[].successors[].successors[].successors[]
-        # tested_parent = tested_forest.roots[].successors[].successors[].successors[].successors[]
+    def test_iteration_alone_node(self):
+        tested_forest = Forest.build_forest([2])
+        proper_forest_flat_view = convert_forest_list_to_flat_list([2])
+        tested_forest_flat_view = []
+        for node in tested_forest:
+            tested_forest_flat_view.append(node.content)
+        self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
 
-        # tested_forest.(tested_node, tested_parent)
-        # self.assertTrue(is_forest_valid(tested_forest))
-        # self.assertEqual(proper_forest, tested_forest)
+    def test_iteration_forest(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest_flat_view = convert_forest_list_to_flat_list([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        # tested_forest = Forest.build_forest([2, 3])
+        # proper_forest_flat_view = convert_forest_list_to_flat_list([2, 3])
+        tested_forest_flat_view = []
+        for node in tested_forest:
+            tested_forest_flat_view.append(node.content)
+        self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
+# TODO: Swap expected and actual everywhere
 
 class TestTree(unittest.TestCase):
     pass
