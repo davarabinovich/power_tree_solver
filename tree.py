@@ -229,6 +229,14 @@ class Forest:
         if is_root:
             self._roots.remove(subroot)
 
+    def free_leafage(self, parent: _ForestNode):
+        self._validate_nodes(parent)
+        temp_node_successors = []
+        for successor in parent.successors:
+            temp_node_successors.append(successor)
+        for successor in temp_node_successors:
+            self._make_root(successor)
+
     def free_node(self, node: _ForestNode):
         self._validate_nodes(node)
         node_parent = node.parent
@@ -247,13 +255,14 @@ class Forest:
 
     def free_subtree(self, subroot: _ForestNode):
         self._validate_nodes(subroot)
-        self._make_root(subroot)
+        if subroot.is_successor():
+            self._make_root(subroot)
 
     def delete_leafage(self, parent: _ForestNode):
         self._validate_nodes(parent)
         for successor in parent.successors:
             self._delete_subtree(successor)
-            # TODO : Solve warning
+            # TODO:
             # class A:
             #     def __init__(self):
             #         pass
@@ -397,7 +406,7 @@ class Forest:
         subroot.disconnect()
         clear_forest_refs_recursively(subroot)
 
-
+# TODO: Rework all funcs to they sustain validity of the forest
     def _make_root(self, node: _ForestNode):
         node.disconnect()
         self._roots.append(node)
