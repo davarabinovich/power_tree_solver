@@ -270,7 +270,8 @@ class Forest:
         for successor in parent.successors:
             temp_node_successors.append(successor)
         for successor in temp_node_successors:
-            self._delete_subtree(successor)
+            successor.disconnect()
+            self._remove_subtree_from_forest(successor)
 
     def delete_leaf(self, leaf: _ForestNode):
         self._validate_nodes(leaf)
@@ -285,22 +286,24 @@ class Forest:
         if node.is_root():
             self._roots.remove(node)
 
-        node_parent = node.parent
         temp_node_successors = []
-        for successor in node_parent.successors:
+        for successor in node.successors:
             temp_node_successors.append(successor)
+
+        node_parent = node.parent
         for successor in temp_node_successors:
             successor.connect_to(node_parent)
+        if node.is_root():
+            for successor in temp_node_successors:
+                self._roots.append(successor)
         self._delete_node(node)
 
     def delete_subtree(self, subroot: _ForestNode):
         self._validate_nodes(subroot)
-
-        for successor in subroot.successors:
-            self.delete_subtree(successor)
         if subroot.is_root():
             self._roots.remove(subroot)
-        self._delete_subtree(subroot)
+        subroot.disconnect()
+        self._remove_subtree_from_forest(subroot)
 
 
     def __iter__(self):
@@ -390,14 +393,11 @@ class Forest:
         node.set_forest_ref(None)
         node.disconnect()
 
-    def _delete_subtree(self, subroot: _ForestNode):
-        def clear_forest_refs_recursively(subroot: Forest._ForestNode):
-            for successor in subroot.successors:
-                clear_forest_refs_recursively(successor)
-            subroot.set_forest_ref(None)
+    def _remove_subtree_from_forest(self, subroot: _ForestNode):
+        for successor in subroot.successors:
+            self._remove_subtree_from_forest(successor)
+        subroot.set_forest_ref(None)
 
-        subroot.disconnect()
-        clear_forest_refs_recursively(subroot)
 
 # TODO: Rework all funcs to they sustain validity of the forest
     def _make_root(self, node: _ForestNode):
