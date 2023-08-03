@@ -11,50 +11,17 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Glain 0.1 alfa</string>
+   <string>Power Tree Solver 0.1 alfa</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label">
+   <widget class="QGraphicsView" name="graphicsView">
     <property name="geometry">
      <rect>
-      <x>80</x>
-      <y>40</y>
-      <width>91</width>
-      <height>20</height>
+      <x>100</x>
+      <y>60</y>
+      <width>256</width>
+      <height>192</height>
      </rect>
-    </property>
-    <property name="layoutDirection">
-     <enum>Qt::LeftToRight</enum>
-    </property>
-    <property name="text">
-     <string>Commands:</string>
-    </property>
-    <property name="alignment">
-     <set>Qt::AlignCenter</set>
-    </property>
-   </widget>
-   <widget class="QWidget" name="verticalLayoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>70</y>
-      <width>101</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" name="verticalLayout"/>
-   </widget>
-   <widget class="QPushButton" name="pushButton">
-    <property name="geometry">
-     <rect>
-      <x>81</x>
-      <y>71</y>
-      <width>93</width>
-      <height>28</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Add</string>
     </property>
    </widget>
   </widget>
@@ -64,7 +31,7 @@
      <x>0</x>
      <y>0</y>
      <width>502</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>
