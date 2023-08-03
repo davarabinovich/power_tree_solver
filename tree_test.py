@@ -45,7 +45,7 @@ def is_forest_tree_valid(root: Forest._ForestNode, forest:Forest):
         is_subtree_valid(successor)
     return True
 
-# TODO: make input lists as constants
+# TODO: Make input lists as constants
 # TODO: Check cases with several exceptions during one method call
 class TestNodeDisconnect(unittest.TestCase):
     def test_disconnect_leaf_from_none(self):
@@ -583,7 +583,7 @@ class TestNodeIteration(unittest.TestCase):
             tested_root_flat_view.append(node.content)
         self.assertEqual(tested_root_flat_view, proper_root_flat_view)
 
-# TODO: Check equivalency of work of two different methods where it's possible
+# TODO: Check equivalency of work of two different methods where it's possible (e. g. add_leaf to None and create_root)
 class TestForestCreateRoot(unittest.TestCase):
     def test_create_first_root(self):
         tested_forest = Forest.build_forest()
@@ -1252,11 +1252,41 @@ class TestForestIteration(unittest.TestCase):
             tested_forest_flat_view.append(node.content)
         self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
 
+    def test_iteration_single_list(self):
+        tested_forest = Forest.build_forest([2, 3])
+        proper_forest_flat_view = convert_forest_list_to_flat_list([2, 3])
+        tested_forest_flat_view = []
+        for node in tested_forest:
+            tested_forest_flat_view.append(node.content)
+        self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
+
+    def test_iteration_single_simple_tree(self):
+        tested_forest = Forest.build_forest([2, 3, 4, 5])
+        proper_forest_flat_view = convert_forest_list_to_flat_list([2, 3, 4, 5])
+        tested_forest_flat_view = []
+        for node in tested_forest:
+            tested_forest_flat_view.append(node.content)
+        self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
+
+    def test_iteration_singletons_forest(self):
+        tested_forest = Forest.build_forest([2], [3])
+        proper_forest_flat_view = convert_forest_list_to_flat_list([2], [3])
+        tested_forest_flat_view = []
+        for node in tested_forest:
+            tested_forest_flat_view.append(node.content)
+        self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
+
+    def test_iteration_simple_trees(self):
+        tested_forest = Forest.build_forest([2, 3, 4, 5], [6, 7, 8, 9])
+        proper_forest_flat_view = convert_forest_list_to_flat_list([2, 3, 4, 5], [6, 7, 8, 9])
+        tested_forest_flat_view = []
+        for node in tested_forest:
+            tested_forest_flat_view.append(node.content)
+        self.assertEqual(tested_forest_flat_view, proper_forest_flat_view)
+
     def test_iteration_forest(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         proper_forest_flat_view = convert_forest_list_to_flat_list([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
-        # tested_forest = Forest.build_forest([2, 3])
-        # proper_forest_flat_view = convert_forest_list_to_flat_list([2, 3])
         tested_forest_flat_view = []
         for node in tested_forest:
             tested_forest_flat_view.append(node.content)

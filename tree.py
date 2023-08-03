@@ -199,7 +199,7 @@ class Node:
         self._cur_node = self._cur_node.parent.successors[self._cur_indices[-1]]
 
 
-# TODO: Rework with fictive root of roots to simplify modification method's code
+# TODO: Try implementation with fictive root of roots to simplify modification method's code
 class Forest:
     # Public interface
     class NotNode(Exception): pass
@@ -382,6 +382,7 @@ class Forest:
             if len(self._roots) == self._cur_tree:
                 raise StopIteration
             else:
+                self._roots[self._cur_tree].__iter__()
                 self._cur_node = self._roots[self._cur_tree].__next__()
 
         return self._cur_node
@@ -470,7 +471,7 @@ class Tree(Forest):
 
     @staticmethod
     def create(node: Node) -> Tree:
-        # TODO : Copy successors or not
+        # TODO: Copy successors or not
         pass
 
     def create_root(self):
