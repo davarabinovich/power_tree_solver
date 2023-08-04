@@ -1,3 +1,4 @@
+import sys
 
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
@@ -16,8 +17,18 @@ class DrawingArea:
         yellow_pen = QPen(QColorConstants.Yellow)
         yellow_pen.setWidth(5)
         black_brush = QBrush(QColorConstants.Black)
-
-        rect = self.scene.addRect(50, 50, 150, 150, pen=yellow_pen, brush=black_brush)
+        rect = MyRect(50, 50, 150, 150)
+        rect.setPen(yellow_pen)
+        rect.setBrush(black_brush)
+        self.scene.addItem(rect)
         rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
 
     _is_instance = False
+
+
+class MyRect(QGraphicsRectItem):
+    def __init__(self, *argv):
+        super().__init__(*argv)
+
+    def mousePressEvent(self, *args, **kwargs):
+        sys.exit()
