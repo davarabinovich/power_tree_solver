@@ -1,7 +1,7 @@
 
 import sys
 from PyQt6.QtWidgets import QApplication
-from ui import *
+from common_gui import *
 
 
 VERSION = (0, 1, "alfa")
@@ -9,7 +9,7 @@ VERSION = (0, 1, "alfa")
 
 def main():
     app = QApplication(sys.argv)
-    ui = Ui()
+    ui = CommonGui()
     ui.launch()
     sys.exit(app.exec())
 

@@ -5,12 +5,12 @@ from drawing import *
 
 
 # TODO: Implement singleton
-class Ui:
-    class ExtraUi(Exception): pass
+class CommonGui:
+    class ExtraGui(Exception): pass
 
     def __init__(self):
-        if Ui._is_instance:
-            raise Ui.ExtraUi
+        if CommonGui._is_instance:
+            raise CommonGui.ExtraGui
         self._is_instance = True
 
         self.window = QMainWindow()
