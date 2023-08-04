@@ -17,8 +17,7 @@ class CommonGui:
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self.window)
 
-        self.drawing_area = DrawingArea()
-        self.ui.graphicsView.setScene(self.drawing_area.scene)
+        self.drawing_area = DrawingArea(self.ui.graphicsView)
 
     def launch(self):
         self.window.show()
