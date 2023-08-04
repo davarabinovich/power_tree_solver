@@ -12,8 +12,12 @@ class DrawingArea:
         self._is_instance = True
 
         self.scene = QGraphicsScene()
-        black_brush = QBrush()
-        black_brush.setColor(QColorConstants.Black)
-        self.scene.addRect(50, 50, 150, 150, brush=black_brush)
+
+        yellow_pen = QPen(QColorConstants.Yellow)
+        yellow_pen.setWidth(5)
+        black_brush = QBrush(QColorConstants.Black)
+
+        rect = self.scene.addRect(50, 50, 150, 150, pen=yellow_pen, brush=black_brush)
+        rect.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
 
     _is_instance = False
