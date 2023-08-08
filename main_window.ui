@@ -41,7 +41,7 @@
   <customwidget>
    <class>GraphView</class>
    <extends>QWidget</extends>
-   <header>drawing</header>
+   <header>graph_gui</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

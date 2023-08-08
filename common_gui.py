@@ -1,7 +1,7 @@
 
 from PyQt6.QtWidgets import QMainWindow
 from main_window import Ui_MainWindow
-from drawing import *
+from graph_gui import *
 
 
 # TODO: Implement singleton
@@ -16,8 +16,6 @@ class CommonGui:
         self.window = QMainWindow()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self.window)
-
-        self.drawing_area = DrawingArea(self.ui.graphview)
 
     def launch(self):
         self.window.show()

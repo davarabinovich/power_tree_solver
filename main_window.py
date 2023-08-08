@@ -33,4 +33,4 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Power Tree Solver 0.1 alfa"))
-from drawing import GraphView
+from graph_gui import GraphView
