@@ -12,15 +12,15 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(502, 348)
+        MainWindow.resize(849, 569)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.graphicsView = QtWidgets.QGraphicsView(parent=self.centralwidget)
-        self.graphicsView.setGeometry(QtCore.QRect(100, 60, 256, 192))
-        self.graphicsView.setObjectName("graphicsView")
+        self.graphview = GraphView(parent=self.centralwidget)
+        self.graphview.setGeometry(QtCore.QRect(-1, -1, 851, 521))
+        self.graphview.setObjectName("graphview")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 502, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 849, 22))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
@@ -33,3 +33,4 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Power Tree Solver 0.1 alfa"))
+from drawing import GraphView

@@ -1,31 +1,32 @@
 
-import sys
-
+from __future__ import annotations
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 
 
-class DrawingArea:
+class DrawingArea():
     class ExtraDrawingArea(Exception): pass
 
-    def __init__(self, graphics_view: QGraphicsView):
+    def __init__(self, view: GraphView):
         if DrawingArea._is_instance:
             raise DrawingArea.ExtraDrawingArea
         self._is_instance = True
 
-        self._scene = GraphScene()
-        self._view = graphics_view
+        self._scene = QGraphicsScene()
+        self._view = view
+        self._view.initialize(self)
         self._view.setScene(self._scene)
 
-        self._context_menu = QMenu(self._view)
-        create_node_action = self._context_menu.addAction("Create New Node")
-        create_node_action.triggered.connect(self.add_node)
+        self._y = 100
+        self.add_root()
 
-        self.add_node()
-
-    def add_node(self):
-        rect = GraphNode(50, 100)
+    def add_root(self):
+        x, y = self._calc_new_node_coords()
+        rect = GraphNode(x, y, self.add_child)
         self._scene.addItem(rect)
+
+    def add_child(self, node: GraphNode):
+        pass
 
     @property
     def scene(self):
@@ -34,22 +35,37 @@ class DrawingArea:
     def scene(self, value):
         self._scene = value
 
+    def _calc_new_node_coords(self):
+        x = DrawingArea._X
+        y = self._y
+        self._y += 2 * GraphNode.HEIGHT
+        return x, y
+
+    _X = 50
+
     _is_instance = False
 
 
-class GraphScene(QGraphicsScene):
-    def __init__(self):
-        super().__init__()
+class GraphView(QGraphicsView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._area = None
+        self._context_menu = QMenu(self)
 
-    def contextMenuEvent(self, *args, **kwargs):
-        pass
+    def initialize(self, area: DrawingArea):
+        self._area = area
+        create_node_action = self._context_menu.addAction("Create New Node")
+        create_node_action.triggered.connect(self._area.add_root)
+
+    def contextMenuEvent(self, event):
+        self._context_menu.exec(event.globalPos())
 
 
-class GraphNode(QGraphicsRectItem):
+class GraphNode(QGraphicsRectItem, QWidget):
     WIDTH = 100
     HEIGHT = 50
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, add_child_func):
         super().__init__(x, y, self.WIDTH, self.HEIGHT)
         pen = QPen(QColorConstants.Yellow, 5)
         brush = QBrush(QColorConstants.Black)
@@ -58,5 +74,9 @@ class GraphNode(QGraphicsRectItem):
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
 
-    def mousePressEvent(self, *args, **kwargs):
-        sys.exit()
+        self._context_menu = QMenu(self)
+        create_child_action = self._context_menu.addAction("Create Child Node")
+        create_child_action.triggered.connect(add_child_func)
+
+    def contextMenuEvent(self, event):
+        self._context_menu.exec(event.globalPos())
