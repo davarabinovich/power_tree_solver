@@ -12,6 +12,8 @@ from PyQt6.QtCore import *
 class GraphView(QGraphicsView):
     HORIZONTAL_GAP = 50
     VERTICAL_GAP = 50
+    CROSS_X = 20
+    CROSS_Y = 200
 
     CONNECTION_LINE_COLOR = QColorConstants.Red
     CONNECTION_LINE_THICKNESS = 3
@@ -27,9 +29,15 @@ class GraphView(QGraphicsView):
         self._scene = GraphScene()
         self.setScene(self._scene)
 
+        cross = CrossIcon()
+        self._scene.addItem(cross)
+        cross.moveBy(GraphView.CROSS_X, GraphView.CROSS_Y)
+        cross.clicked.connect(self.add_root)
+
         self._root_insertion_y = 100
         self.add_root()
 
+    @pyqtSlot()
     def add_root(self):
         rect = GraphNode()
         rect.setData(GraphView._ITEM_DATA_KEYS_DICT["children_number"], 0)
