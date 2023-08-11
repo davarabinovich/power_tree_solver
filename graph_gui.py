@@ -26,7 +26,8 @@ class GraphView(QGraphicsView):
         self._is_instance = True
 
         super().__init__(parent)
-        self._scene = GraphScene()
+        self._nodes = []
+        self._scene = QGraphicsScene()
         self.setScene(self._scene)
 
         cross = CrossIcon()
@@ -39,34 +40,37 @@ class GraphView(QGraphicsView):
 
     @pyqtSlot()
     def add_root(self):
-        rect = GraphNode()
-        rect.setData(GraphView._ITEM_DATA_KEYS_DICT["children_number"], 0)
-        rect.newChildCalled.connect(self.add_child)
-        self._scene.addItem(rect)
         x, y = self._calc_new_root_coords()
-        rect.moveBy(x, y)
+        self._add_node(x,y)
 
+    # TODO: replace QGraphicsItem with GraphNode
     @pyqtSlot(QGraphicsItem)
     def add_child(self, parent: QGraphicsItem):
-        child = GraphNode()
-        child.setData(GraphView._ITEM_DATA_KEYS_DICT["children_number"], 0)
-        self._scene.addItem(child)
+        x, y = GraphView._calc_new_child_coords(parent)
+        child = self._add_node(x, y)
         parent_children_number = parent.data(GraphView._ITEM_DATA_KEYS_DICT["children_number"])
-        x = parent.pos().x() + GraphNode.WIDTH + GraphView.HORIZONTAL_GAP
-        y = parent.pos().y() + (GraphNode.HEIGHT + GraphView.VERTICAL_GAP) * parent_children_number
-        child.moveBy(x, y)
         parent.setData(GraphView._ITEM_DATA_KEYS_DICT["children_number"], parent_children_number+1)
-        child.newChildCalled.connect(self.add_child)
+        self._draw_connection_line(parent, child)
 
-        parent_x = parent.pos().x() + GraphNode.WIDTH
-        parent_y = parent.pos().y() + GraphNode.HEIGHT/2
-        child_x = x
-        child_y = y + GraphNode.HEIGHT/2
-        connection_line = QGraphicsLineItem(parent_x, parent_y, child_x, child_y)
+    def _add_node(self, x, y):
+        node = GraphNode()
+        node.setData(GraphView._ITEM_DATA_KEYS_DICT["children_number"], 0)
+        node.newChildCalled.connect(self.add_child)
+        self._scene.addItem(node)
+        node.moveBy(x, y)
+
+        return node
+
+    def _draw_connection_line(self, left: QGraphicsItem, right: QGraphicsItem):
+        left_x = left.pos().x() + GraphNode.WIDTH
+        left_y = left.pos().y() + GraphNode.HEIGHT / 2
+        right_x = right.pos().x()
+        right_y = right.pos().y() + GraphNode.HEIGHT / 2
+
+        connection_line = QGraphicsLineItem(left_x, left_y, right_x, right_y)
         pen = QPen(GraphView.CONNECTION_LINE_COLOR, GraphView.CONNECTION_LINE_THICKNESS)
         connection_line.setPen(pen)
         self._scene.addItem(connection_line)
-
 
     def _calc_new_root_coords(self):
         x = GraphView._X
@@ -74,18 +78,21 @@ class GraphView(QGraphicsView):
         self._root_insertion_y += 2 * GraphNode.HEIGHT
         return x, y
 
+    @staticmethod
+    def _calc_new_child_coords(parent: QGraphicsItem):
+        parent_children_number = parent.data(GraphView._ITEM_DATA_KEYS_DICT["children_number"])
+        x = parent.pos().x() + GraphNode.WIDTH + GraphView.HORIZONTAL_GAP
+        y = parent.pos().y() + (GraphNode.HEIGHT + GraphView.VERTICAL_GAP) * parent_children_number
+        return x, y
+
     _ITEM_DATA_KEYS_DICT = {
-        "children_number" : 0
+        "children_number" : 0,
+        "layer": 1
     }
 
     _X = 50
 
     _is_instance = False
-
-
-class GraphScene(QGraphicsScene):
-    def __init__(self):
-        super().__init__()
 
 
 class GraphNode(QGraphicsObject):
