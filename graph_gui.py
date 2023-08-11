@@ -35,30 +35,41 @@ class GraphView(QGraphicsView):
         cross.moveBy(GraphView.CROSS_X, GraphView.CROSS_Y)
         cross.clicked.connect(self.add_root)
 
-        self._root_insertion_y = 100
         self.add_root()
 
     @pyqtSlot()
     def add_root(self):
-        x, y = self._calc_new_root_coords()
-        self._add_node(x,y)
+        x_pos, layer = self._calc_new_root_position()
+        self._nodes.append([])
+        self._add_node(x_pos, layer)
 
     # TODO: replace QGraphicsItem with GraphNode
     @pyqtSlot(QGraphicsItem)
     def add_child(self, parent: QGraphicsItem):
-        x, y = GraphView._calc_new_child_coords(parent)
-        child = self._add_node(x, y)
+        x_pos, layer = GraphView._calc_new_child_position(parent)
+        child = self._add_node(x_pos, layer)
         parent_children_number = parent.data(GraphView._ITEM_DATA_KEYS_DICT["children_number"])
         parent.setData(GraphView._ITEM_DATA_KEYS_DICT["children_number"], parent_children_number+1)
         self._draw_connection_line(parent, child)
 
-    def _add_node(self, x, y):
+        if parent_children_number > 0:
+            for cur_layer in range(layer+1, len(self._nodes)):
+                for node in self._nodes[cur_layer]:
+                    delta_y = GraphView.VERTICAL_GAP + GraphNode.HEIGHT
+                    node.moveBy(0, delta_y)
+                    node.setData(self._ITEM_DATA_KEYS_DICT["layer"], cur_layer+1)
+
+    def _add_node(self, x_pos, layer, is_new_layer):
         node = GraphNode()
         node.setData(GraphView._ITEM_DATA_KEYS_DICT["children_number"], 0)
         node.newChildCalled.connect(self.add_child)
         self._scene.addItem(node)
-        node.moveBy(x, y)
 
+        y_pos = GraphView.VERTICAL_GAP + layer * (GraphNode.HEIGHT + GraphView.VERTICAL_GAP)
+        node.moveBy(x_pos, y_pos)
+        if is_new_layer
+        self._nodes[layer].append(node)
+        node.setData(self._ITEM_DATA_KEYS_DICT["layer"], layer)
         return node
 
     def _draw_connection_line(self, left: QGraphicsItem, right: QGraphicsItem):
@@ -72,25 +83,23 @@ class GraphView(QGraphicsView):
         connection_line.setPen(pen)
         self._scene.addItem(connection_line)
 
-    def _calc_new_root_coords(self):
-        x = GraphView._X
-        y = self._root_insertion_y
-        self._root_insertion_y += 2 * GraphNode.HEIGHT
-        return x, y
+    def _calc_new_root_position(self):
+        x_pos = GraphView.HORIZONTAL_GAP
+        layer = len(self._nodes)
+        return x_pos, layer
 
     @staticmethod
-    def _calc_new_child_coords(parent: QGraphicsItem):
+    def _calc_new_child_position(parent: QGraphicsItem):
+        x_pos = parent.pos().x() + GraphNode.WIDTH + GraphView.HORIZONTAL_GAP
         parent_children_number = parent.data(GraphView._ITEM_DATA_KEYS_DICT["children_number"])
-        x = parent.pos().x() + GraphNode.WIDTH + GraphView.HORIZONTAL_GAP
-        y = parent.pos().y() + (GraphNode.HEIGHT + GraphView.VERTICAL_GAP) * parent_children_number
-        return x, y
+        parent_layer = parent.data(GraphView._ITEM_DATA_KEYS_DICT["layer"])
+        layer = parent_layer + parent_children_number
+        return x_pos, layer
 
     _ITEM_DATA_KEYS_DICT = {
         "children_number" : 0,
         "layer": 1
     }
-
-    _X = 50
 
     _is_instance = False
 
