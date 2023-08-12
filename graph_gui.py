@@ -27,6 +27,7 @@ class GraphView(QGraphicsView):
 
         super().__init__(parent)
         self._nodes = []
+        self._connection_lines = []
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
 
@@ -54,15 +55,20 @@ class GraphView(QGraphicsView):
         child = self._addNode(x_pos, layer)
         GraphView._setNodesField(child, "parent", parent)
         GraphView._incNodesField(parent, "children_number")
-        self._drawConnectionLine(parent, child)
+        line = self._drawConnectionLine(parent, child)
+        self._connection_lines[layer].append(line)
 
 
     # Private interface
-    _ITEM_DATA_KEYS_DICT = {
+    _NODE_DATA_KEYS_DICT = {
         "children_number": 0,
         "layer": 1,
-        "connection_line": 2,
-        "parent": 3
+        "parent": 2
+    }
+
+    _LINE_DATA_KEYS_DICT = {
+        "parent": 0,
+        "child": 1
     }
 
     def _addNode(self, x_pos, layer):
@@ -76,6 +82,7 @@ class GraphView(QGraphicsView):
 
         if layer == len(self._nodes):
             self._nodes.append([])
+            self._connection_lines.append([])
         self._nodes[layer].append(node)
         GraphView._setNodesField(node, "layer", layer)
         return node
@@ -88,30 +95,37 @@ class GraphView(QGraphicsView):
         pen = QPen(GraphView.CONNECTION_LINE_COLOR, GraphView.CONNECTION_LINE_THICKNESS)
         connection_line.setPen(pen)
         self._scene.addItem(connection_line)
-        GraphView._setNodesField(right, "connection_line", connection_line)
+        connection_line.setData(GraphView._LINE_DATA_KEYS_DICT["parent"], left)
+        connection_line.setData(GraphView._LINE_DATA_KEYS_DICT["child"], right)
+
+        return connection_line
 
     def _moveNodesBelow(self, layer):
         if (layer < len(self._nodes)):
             self._nodes.insert(layer, [])
+            self._connection_lines.insert(layer, [])
 
         for cur_layer in range(layer+1, len(self._nodes)):
             for node in self._nodes[cur_layer]:
-                GraphView._moveNodeWithLineBelow(node)
+                self._moveNodeBelow(node)
 
-    @staticmethod
-    def _moveNodeWithLineBelow(node):
+        for cur_layer in range(layer+1, len(self._nodes)):
+            for line in self._connection_lines[cur_layer]:
+                parent = line.data(GraphView._LINE_DATA_KEYS_DICT["parent"])
+                child = line.data(GraphView._LINE_DATA_KEYS_DICT["child"])
+                self._redrawConnectionLine(line)
+
+    def _moveNodeBelow(self, node: GraphNode):
         delta_y = GraphView.VERTICAL_GAP + GraphNode.HEIGHT
         node.moveBy(0, delta_y)
         GraphView._incNodesField(node, "layer")
-        if GraphView._getNodesField(node, "parent") is not None:
-            GraphView._redrawConnectionLine(node)
 
-    @staticmethod
-    def _redrawConnectionLine(node):
-        connection_line = GraphView._getNodesField(node, "connection_line")
-        left_x, left_y = GraphView._calcConnectionPointForLeft(GraphView._getNodesField(node, "parent"))
-        right_x, right_y = GraphView._calcConnectionPointForRight(node)
-        connection_line.setLine(left_x, left_y, right_x, right_y)
+    def _redrawConnectionLine(self, line: QGraphicsLineItem):
+        parent = line.data(GraphView._LINE_DATA_KEYS_DICT["parent"])
+        parent_x, parent_y = GraphView._calcConnectionPointForLeft(parent)
+        child = line.data(GraphView._LINE_DATA_KEYS_DICT["child"])
+        child_x, child_y = GraphView._calcConnectionPointForRight(child)
+        line.setLine(parent_x, parent_y, child_x, child_y)
 
 
     @staticmethod
@@ -142,18 +156,18 @@ class GraphView(QGraphicsView):
 
     @staticmethod
     def _setNodesField(node: QGraphicsItem, key, value):
-        node.setData(GraphView._ITEM_DATA_KEYS_DICT[key], value)
+        node.setData(GraphView._NODE_DATA_KEYS_DICT[key], value)
 
     @staticmethod
     def _incNodesField(node: QGraphicsItem, key):
         cur_value = GraphView._getNodesField(node, key)
         if type(cur_value) is not int:
             raise ValueError
-        node.setData(GraphView._ITEM_DATA_KEYS_DICT[key], cur_value+1)
+        node.setData(GraphView._NODE_DATA_KEYS_DICT[key], cur_value + 1)
 
     @staticmethod
     def _getNodesField(node: QGraphicsItem, key):
-        return node.data(GraphView._ITEM_DATA_KEYS_DICT[key])
+        return node.data(GraphView._NODE_DATA_KEYS_DICT[key])
 
 
     _is_instance = False
