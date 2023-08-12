@@ -1,9 +1,5 @@
 
 from __future__ import annotations
-import sys
-import typing
-from enum import Enum
-
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -11,8 +7,7 @@ from PyQt6.QtCore import *
 
 # TODO: Try to separate scene from view creating another class GraphGUI referencing both them
 class GraphView(QGraphicsView):
-    class ExtraDrawingArea(Exception): pass
-
+    # Public interface
     HORIZONTAL_GAP = 50
     VERTICAL_GAP = 50
     CROSS_X = 20
@@ -20,6 +15,10 @@ class GraphView(QGraphicsView):
 
     CONNECTION_LINE_COLOR = QColorConstants.Red
     CONNECTION_LINE_THICKNESS = 3
+
+
+    class ExtraDrawingArea(Exception): pass
+
 
     def __init__(self, parent: QWidget=None):
         if GraphView._is_instance:
@@ -38,6 +37,7 @@ class GraphView(QGraphicsView):
 
         self.addRoot()
 
+
     @pyqtSlot()
     def addRoot(self):
         x_pos, layer = self._calcNewRootPosition()
@@ -46,17 +46,24 @@ class GraphView(QGraphicsView):
     # TODO: replace QGraphicsItem with GraphNode
     @pyqtSlot(QGraphicsItem)
     def addChild(self, parent: QGraphicsItem):
-        print(self._nodes)
         x_pos, layer = GraphView._calcNewChildPosition(parent)
         parent_children_number = GraphView._getNodesField(parent,"children_number")
         if parent_children_number > 0:
             self._moveNodesBelow(layer)
 
         child = self._addNode(x_pos, layer)
-        GraphView._setNodesField(parent, "children_number", parent_children_number+1)
+        GraphView._setNodesField(child, "parent", parent)
+        GraphView._incNodesField(parent, "children_number")
         self._drawConnectionLine(parent, child)
-        print(self._nodes)
-        print('\n')
+
+
+    # Private interface
+    _ITEM_DATA_KEYS_DICT = {
+        "children_number": 0,
+        "layer": 1,
+        "connection_line": 2,
+        "parent": 3
+    }
 
     def _addNode(self, x_pos, layer):
         node = GraphNode()
@@ -84,28 +91,28 @@ class GraphView(QGraphicsView):
         GraphView._setNodesField(right, "connection_line", connection_line)
 
     def _moveNodesBelow(self, layer):
-        print("Move")
         if (layer < len(self._nodes)):
             self._nodes.insert(layer, [])
-            print("Inserted")
 
         for cur_layer in range(layer+1, len(self._nodes)):
-            print(cur_layer)
-            print(self._nodes[cur_layer])
             for node in self._nodes[cur_layer]:
-                delta_y = GraphView.VERTICAL_GAP + GraphNode.HEIGHT
-                node.moveBy(0, delta_y)
-                GraphView._setNodesField(node, "layer", cur_layer)
-                if GraphView._getNodesField(node, "parent") is not None:
-                    connection_line = GraphView._getNodesField(node, "connection_line")
-                    left_x, left_y = GraphView._calcConnectionPointForLeft(GraphView._getNodesField(node, "parent"))
-                    right_y, right_x = GraphView._calcConnectionPointForRight(node)
-                    connection_line.setLine(left_x, left_y, right_x, right_y)
+                GraphView._moveNodeWithLineBelow(node)
 
-    def _calcNewRootPosition(self):
-        x_pos = GraphView.HORIZONTAL_GAP
-        layer = len(self._nodes)
-        return x_pos, layer
+    @staticmethod
+    def _moveNodeWithLineBelow(node):
+        delta_y = GraphView.VERTICAL_GAP + GraphNode.HEIGHT
+        node.moveBy(0, delta_y)
+        GraphView._incNodesField(node, "layer")
+        if GraphView._getNodesField(node, "parent") is not None:
+            GraphView._redrawConnectionLine(node)
+
+    @staticmethod
+    def _redrawConnectionLine(node):
+        connection_line = GraphView._getNodesField(node, "connection_line")
+        left_x, left_y = GraphView._calcConnectionPointForLeft(GraphView._getNodesField(node, "parent"))
+        right_x, right_y = GraphView._calcConnectionPointForRight(node)
+        connection_line.setLine(left_x, left_y, right_x, right_y)
+
 
     @staticmethod
     def _calcNewChildPosition(parent: QGraphicsItem):
@@ -127,25 +134,33 @@ class GraphView(QGraphicsView):
         y = item.pos().y() + GraphNode.HEIGHT / 2
         return x, y
 
-    @staticmethod
-    def _getNodesField(node: QGraphicsItem, key):
-        return node.data(GraphView._ITEM_DATA_KEYS_DICT[key])
+    def _calcNewRootPosition(self):
+        x_pos = GraphView.HORIZONTAL_GAP
+        layer = len(self._nodes)
+        return x_pos, layer
+
 
     @staticmethod
     def _setNodesField(node: QGraphicsItem, key, value):
         node.setData(GraphView._ITEM_DATA_KEYS_DICT[key], value)
 
-    _ITEM_DATA_KEYS_DICT = {
-        "children_number" : 0,
-        "layer": 1,
-        "connection_line": 2,
-        "parent": 3
-    }
+    @staticmethod
+    def _incNodesField(node: QGraphicsItem, key):
+        cur_value = GraphView._getNodesField(node, key)
+        if type(cur_value) is not int:
+            raise ValueError
+        node.setData(GraphView._ITEM_DATA_KEYS_DICT[key], cur_value+1)
+
+    @staticmethod
+    def _getNodesField(node: QGraphicsItem, key):
+        return node.data(GraphView._ITEM_DATA_KEYS_DICT[key])
+
 
     _is_instance = False
 
 
 class GraphNode(QGraphicsObject):
+    # Public interface
     WIDTH = 100
     HEIGHT = 50
     ROUNDING = 5
@@ -168,6 +183,7 @@ class GraphNode(QGraphicsObject):
         delta_x = GraphNode.WIDTH + GraphNode.CROSS_GAP + CrossIcon.DIAMETER
         delta_y = GraphNode.HEIGHT + GraphNode.OUTLINE_THICKNESS
         rect = QRectF(xl, yt, delta_x, delta_y)
+
         return rect
 
     def paint(self, painter: QPainter=None, *args, **kwargs):
@@ -177,14 +193,17 @@ class GraphNode(QGraphicsObject):
         painter.setBrush(brush)
         painter.drawRoundedRect(0, 0, GraphNode.WIDTH, GraphNode.HEIGHT, GraphNode.ROUNDING, GraphNode.ROUNDING)
 
+    newChildCalled = pyqtSignal(QGraphicsItem)
+
+
+    # Private interface
     @pyqtSlot()
     def _receiveNewChildClick(self):
         self.newChildCalled.emit(self)
 
-    newChildCalled = pyqtSignal(QGraphicsItem)
-
 
 class CrossIcon(QGraphicsWidget):
+    # Public interface
     DIAMETER = 12
     LINE_LENGTH = 8
 
