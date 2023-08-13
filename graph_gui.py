@@ -1,15 +1,18 @@
 
-from __future__ import annotations
-from PyQt6.QtWidgets import *
-from PyQt6.QtGui import *
-from PyQt6.QtCore import *
-
+from settings import *
+from tree import *
+from graph_gui_int import *
 
 # TODO: Try to separate scene from view creating another class GraphGUI referencing both them
+# TODO: Now there is double link between scene objects set and forest - every graph node references to forest node, \
+#       and every forest node stores reference to graph node. The second one probably can be deleted.
 class GraphView(QGraphicsView):
     # Public interface
     HORIZONTAL_GAP = 50
     VERTICAL_GAP = 50
+    VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
+    HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
+
     CROSS_X = 20
     CROSS_Y = 200
 
@@ -26,8 +29,6 @@ class GraphView(QGraphicsView):
         self._is_instance = True
 
         super().__init__(parent)
-        self._nodes = []
-        self._connection_lines = []
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
 
@@ -36,32 +37,32 @@ class GraphView(QGraphicsView):
         cross.moveBy(GraphView.CROSS_X, GraphView.CROSS_Y)
         cross.clicked.connect(self.addRoot)
 
+        self._forest = Forest()
         self.addRoot()
 
 
     @pyqtSlot()
     def addRoot(self):
-        x_pos, layer = self._calcNewRootPosition()
-        self._addNode(x_pos, layer)
+        x, y = self._calcNewRootPosition()
+        root = self._createNodeOnScene(x, y)
+        forest_node = self._forest.create_root(root)
+        GraphView._setNodesField(root, "forest_node", forest_node)
 
     # TODO: replace QGraphicsItem with GraphNode
+    # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node; \
+    #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
     @pyqtSlot(QGraphicsItem)
     def addChild(self, parent: QGraphicsItem):
-        x_pos, layer = GraphView._calcNewChildPosition(parent)
-        parent_children_number = GraphView._getNodesField(parent,"children_number")
-        if parent_children_number > 0:
-            self._moveNodesBelow(layer)
-
-        child = self._addNode(x_pos, layer)
-        GraphView._setNodesField(child, "parent", parent)
-        GraphView._incNodesField(parent, "children_number")
-        line = self._drawConnectionLine(parent, child)
-        self._connection_lines[layer].append(line)
+        x, y = GraphView._calcNewChildPosition(parent)
+        child = self._createNodeOnScene(x, y)
+        parent_forest_node = GraphView._getNodesField(parent, "forest_node")
+        forest_node = self._forest.add_leaf(parent_forest_node, child)
+        GraphView._setNodesField(child, "forest_node", forest_node)
 
 
     # Private interface
     _NODE_DATA_KEYS_DICT = {
-        "children_number": 0,
+        "forest_node": 0,
         "layer": 1,
         "parent": 2
     }
@@ -71,21 +72,13 @@ class GraphView(QGraphicsView):
         "child": 1
     }
 
-    def _addNode(self, x_pos, layer):
-        node = GraphNode()
-        GraphView._setNodesField(node, "children_number", 0)
-        node.newChildCalled.connect(self.addChild)
-        self._scene.addItem(node)
+    def _createNodeOnScene(self, x, y) -> GraphNode:
+        graph_node = GraphNode()
+        graph_node.newChildCalled.connect(self.addChild)
+        self._scene.addItem(graph_node)
+        graph_node.moveBy(x, y)
+        return graph_node
 
-        y_pos = GraphView.VERTICAL_GAP + layer * (GraphNode.HEIGHT + GraphView.VERTICAL_GAP)
-        node.moveBy(x_pos, y_pos)
-
-        if layer == len(self._nodes):
-            self._nodes.append([])
-            self._connection_lines.append([])
-        self._nodes[layer].append(node)
-        GraphView._setNodesField(node, "layer", layer)
-        return node
 
     def _drawConnectionLine(self, left: QGraphicsItem, right: QGraphicsItem):
         left_x, left_y = GraphView._calcConnectionPointForLeft(left)
@@ -130,11 +123,11 @@ class GraphView(QGraphicsView):
 
     @staticmethod
     def _calcNewChildPosition(parent: QGraphicsItem):
-        x_pos = parent.pos().x() + GraphNode.WIDTH + GraphView.HORIZONTAL_GAP
-        parent_children_number = GraphView._getNodesField(parent, "children_number")
-        parent_layer = GraphView._getNodesField(parent, "layer")
-        layer = parent_layer + parent_children_number
-        return x_pos, layer
+        x = parent.pos().x() +  GraphView.HORIZONTAL_STEP
+        parent_forest_node = GraphView._getNodesField(parent, "forest_node")
+        parent_children_num = len(parent_forest_node.successors)
+        y = parent.pos().y() + parent_children_num * GraphView.VERTICAL_STEP
+        return x, y
 
     @staticmethod
     def _calcConnectionPointForLeft(item: QGraphicsItem):
@@ -149,9 +142,10 @@ class GraphView(QGraphicsView):
         return x, y
 
     def _calcNewRootPosition(self):
-        x_pos = GraphView.HORIZONTAL_GAP
-        layer = len(self._nodes)
-        return x_pos, layer
+        x = GraphView.HORIZONTAL_GAP
+        layer = len(self._forest.roots)
+        y = GraphView.VERTICAL_GAP + layer * GraphView.VERTICAL_STEP
+        return x, y
 
 
     @staticmethod
@@ -171,88 +165,3 @@ class GraphView(QGraphicsView):
 
 
     _is_instance = False
-
-
-class GraphNode(QGraphicsObject):
-    # Public interface
-    WIDTH = 100
-    HEIGHT = 50
-    ROUNDING = 5
-
-    FILLING_COLOR = QColorConstants.Black
-    OUTLINE_COLOR = QColorConstants.Yellow
-    OUTLINE_THICKNESS = 5
-
-    CROSS_GAP = 5
-
-    def __init__(self):
-        super().__init__(None)
-        cross = CrossIcon(self)
-        cross.clicked.connect(self._receiveNewChildClick)
-        cross.moveBy(GraphNode.WIDTH+GraphNode.CROSS_GAP, 0)
-
-    def boundingRect(self) -> QRectF:
-        xl = -GraphNode.OUTLINE_THICKNESS / 2
-        yt = -GraphNode.OUTLINE_THICKNESS / 2
-        delta_x = GraphNode.WIDTH + GraphNode.CROSS_GAP + CrossIcon.DIAMETER
-        delta_y = GraphNode.HEIGHT + GraphNode.OUTLINE_THICKNESS
-        rect = QRectF(xl, yt, delta_x, delta_y)
-
-        return rect
-
-    def paint(self, painter: QPainter=None, *args, **kwargs):
-        pen = QPen(GraphNode.OUTLINE_COLOR, GraphNode.OUTLINE_THICKNESS)
-        brush = QBrush(GraphNode.FILLING_COLOR)
-        painter.setPen(pen)
-        painter.setBrush(brush)
-        painter.drawRoundedRect(0, 0, GraphNode.WIDTH, GraphNode.HEIGHT, GraphNode.ROUNDING, GraphNode.ROUNDING)
-
-    newChildCalled = pyqtSignal(QGraphicsItem)
-
-
-    # Private interface
-    @pyqtSlot()
-    def _receiveNewChildClick(self):
-        self.newChildCalled.emit(self)
-
-
-class CrossIcon(QGraphicsWidget):
-    # Public interface
-    DIAMETER = 12
-    LINE_LENGTH = 8
-
-    CIRCLE_COLOR = QColorConstants.Green
-    LINE_COLOR = QColorConstants.White
-    LINE_THICKNESS = 3
-
-    LINE_GAP = (DIAMETER - LINE_LENGTH) / 2
-    RADIUS = DIAMETER / 2
-
-    def __init__(self, parent: QGraphicsItem=None):
-        super().__init__(parent)
-
-    def boundingRect(self) -> QRectF:
-        rect = QRectF(0, 0, CrossIcon.DIAMETER, CrossIcon.DIAMETER)
-        return rect
-
-    def paint(self, painter: QPainter=None, *args, **kwargs):
-        pen = QPen(CrossIcon.CIRCLE_COLOR, 0)
-        brush = QBrush(CrossIcon.CIRCLE_COLOR)
-        painter.setPen(pen)
-        painter.setBrush(brush)
-        painter.drawEllipse(0, 0, CrossIcon.DIAMETER, CrossIcon.DIAMETER)
-
-        pen = QPen(CrossIcon.LINE_COLOR, CrossIcon.LINE_THICKNESS)
-        painter.setPen(pen)
-        top_point = QPointF(CrossIcon.RADIUS, CrossIcon.LINE_GAP)
-        bottom_point = QPointF(CrossIcon.RADIUS, CrossIcon.DIAMETER-CrossIcon.LINE_GAP)
-        painter.drawLine(top_point, bottom_point)
-
-        left_point = QPointF(CrossIcon.LINE_GAP, CrossIcon.RADIUS)
-        right_point = QPointF(CrossIcon.DIAMETER-CrossIcon.LINE_GAP, CrossIcon.RADIUS)
-        painter.drawLine(left_point, right_point)
-
-    def mousePressEvent(self, event, QGraphicsSceneMouseEvent=None):
-        self.clicked.emit()
-
-    clicked = pyqtSignal()

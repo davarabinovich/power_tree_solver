@@ -130,6 +130,15 @@ class Node:
 
         return result
 
+    def calc_subtree_width(self):
+        width = 0
+        if len(self._successors) > 0:
+            for successor in self._successors:
+                width += successor.calc_subtree_width()
+        else:
+             width = 1
+
+        return width
 
     def is_root(self):
         return self._parent is None
@@ -395,6 +404,13 @@ class Forest:
             if not self._roots[index].__eq__(other._roots[index]):
                 return False
         return True
+
+
+    def calc_width(self):
+        width = 0
+        for root in self._roots:
+            width = root.calc_subtree_width()
+        return width
 
 
     @property
