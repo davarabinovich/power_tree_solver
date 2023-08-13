@@ -54,8 +54,7 @@ class GraphView(QGraphicsView):
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
     @pyqtSlot(QGraphicsItem)
     def addChild(self, parent: QGraphicsItem):
-        parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
-        if len(parent_forest_node.successors) > 0:
+        if len(parent.childrenConnection.) > 0:
             furthest_parent_leaf = self._forest.find_farest_leaf(parent_forest_node)
             self._moveNodesBelow(furthest_parent_leaf)
 
@@ -64,7 +63,7 @@ class GraphView(QGraphicsView):
         forest_node = self._forest.add_leaf(parent_forest_node)
         self._linkGraphAndForestNodes(child, forest_node)
 
-        self._drawConnection(parent, child)
+        self._addConnection(parent, child)
 
 
     # Private interface
@@ -125,47 +124,17 @@ class GraphView(QGraphicsView):
         graph_node.moveBy(position.x(), position.y())
         return graph_node
 
-    def _drawConnection(self, parent: QGraphicsItem, child: QGraphicsItem):
-        parent_conn_point = GraphView._calcConnectionPointForParent(parent)
-        child_conn_point = GraphView._calcConnectionPointForChild(child)
-        lines = []
-
-        new_parents_children_number = len(parent.data(GraphView._FOREST_NODE_DATA_KEY).successors)
-        if new_parents_children_number == 0:
-            raise GraphView._DrawingConnectionLineToNothing
-
-        elif new_parents_children_number == 1:
-            connection_line = QGraphicsLineItem(parent_conn_point.x(), parent_conn_point.y(),
-                                                child_conn_point.x(), child_conn_point.y())
-            lines.append(connection_line)
+    def _addConnection(self, parent: QGraphicsItem, child: QGraphicsItem):
+        if parent.childrenConnection is None:
+            connection = ConnectionMultiline()
+            connection.assignParent(parent)
         else:
-            upper_branch_point = QPointF(parent_conn_point.x() + GraphView.BRANCH_INDENT,  parent_conn_point.y())
-            lower_branch_x = parent_conn_point.x() + GraphView.BRANCH_INDENT
-            lower_branch_y = child_conn_point.y()
+            connection = parent.childrenConnection
 
-            if new_parents_children_number == 2:
-                branch_line = QGraphicsLineItem(upper_branch_point.x(), upper_branch_point.y(),
-                                                lower_branch_x, lower_branch_y)
-                lines.append(branch_line)
-            else:
-                items_in_branch_point = self._scene.items(upper_branch_point)
-                branch_line = None
-                for item in items_in_branch_point:
-                    if isinstance(item, QGraphicsLineItem):
-                        q_line = item.line()
-                        if q_line.x2() == lower_branch_x:
-                            branch_line = item
-                            break
-                branch_line.setLine(upper_branch_point.x(), upper_branch_point.y(), lower_branch_x, lower_branch_y)
-
-            finish_line = QGraphicsLineItem(lower_branch_x, lower_branch_y,
-                                            child_conn_point.x(), child_conn_point.y())
-            lines.append(finish_line)
-
-        pen = QPen(GraphView.CONNECTION_LINE_COLOR, GraphView.CONNECTION_LINE_THICKNESS)
-        for item in lines:
-            item.setPen(pen)
-            self._scene.addItem(item)
+        child_port = connection.assignNewChild(child)
+        parent.childrenConnection = connection
+        child.parentConnection = child_port
+        self._scene.addItem(connection)
 
     def _moveNodesBelow(self, node: Node):
         node_forest_root = self._forest.find_root(node)

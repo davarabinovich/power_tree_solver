@@ -19,8 +19,11 @@ class GraphNode(QGraphicsObject):
     def __init__(self):
         super().__init__(None)
         cross = CrossIcon(self)
+
         cross.clicked.connect(self._receiveNewChildClick)
         cross.moveBy(GraphNode.WIDTH+GraphNode.CROSS_GAP, 0)
+        self._parent_connection = None
+        self._children_connection = None
 
     def boundingRect(self) -> QRectF:
         xl = -GraphNode.OUTLINE_THICKNESS / 2
@@ -37,6 +40,20 @@ class GraphNode(QGraphicsObject):
         painter.setPen(pen)
         painter.setBrush(brush)
         painter.drawRoundedRect(0, 0, GraphNode.WIDTH, GraphNode.HEIGHT, GraphNode.ROUNDING, GraphNode.ROUNDING)
+
+    @property
+    def parentConnection(self):
+        return self._parent_connection
+    @parentConnection.setter
+    def parentConnection(self, value: ChildPort):
+        self._parent_connection = value
+
+    @property
+    def childrenConnection(self):
+        return self._children_connection
+    @childrenConnection.setter
+    def childrenConnection(self, value: ConnectionMultiline):
+        self._children_connection = value
 
     newChildCalled = pyqtSignal(QGraphicsItem)
 
@@ -87,3 +104,26 @@ class CrossIcon(QGraphicsWidget):
         self.clicked.emit()
 
     clicked = pyqtSignal()
+
+
+class ConnectionMultiline(QGraphicsItem):
+    class ChildPort:
+        def __init__(self, connection: ConnectionMultiline, port_number):
+            self._connection = connection
+            self._port_number = port_number
+
+    def __init__(self):
+        super().__init__(None)
+        self._primitives = []
+
+    def boundingRect(self) -> QRectF:
+        pass
+
+    def paint(self, painter: QPainter=None, *args, **kwargs):
+        pass
+
+    def assignParent(self, parent: QGraphicsItem):
+        pass
+
+    def assignNewChild(self, child: QGraphicsItem) -> ConnectionMultiline.ChildPort:
+        pass
