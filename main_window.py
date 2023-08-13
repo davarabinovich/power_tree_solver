@@ -12,15 +12,15 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(849, 578)
+        MainWindow.resize(1249, 819)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.graphview = GraphView(parent=self.centralwidget)
-        self.graphview.setGeometry(QtCore.QRect(-1, -1, 851, 531))
+        self.graphview.setGeometry(QtCore.QRect(-1, -1, 1251, 771))
         self.graphview.setObjectName("graphview")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 849, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1249, 22))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)

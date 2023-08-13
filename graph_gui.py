@@ -12,6 +12,7 @@ class GraphView(QGraphicsView):
     VERTICAL_GAP = 50
     VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
     HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
+    BRANCH_INDENT = 20
 
     CROSS_X = 20
     CROSS_Y = 200
@@ -49,25 +50,28 @@ class GraphView(QGraphicsView):
         self._linkGraphAndForestNodes(root, forest_node)
 
     # TODO: replace QGraphicsItem with GraphNode
-    # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node; \
+    # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node;
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
     @pyqtSlot(QGraphicsItem)
     def addChild(self, parent: QGraphicsItem):
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if len(parent_forest_node.successors) > 0:
-            last_parent_child = parent_forest_node.successors[-1]
-            self._moveNodesBelow(last_parent_child)
+            furthest_parent_leaf = self._forest.find_farest_leaf(parent_forest_node)
+            self._moveNodesBelow(furthest_parent_leaf)
 
         position = GraphView._calcNewChildPosition(parent)
         child = self._createNodeOnScene(position)
         forest_node = self._forest.add_leaf(parent_forest_node)
         self._linkGraphAndForestNodes(child, forest_node)
 
-        self._drawConnectionLine(parent, child)
+        self._drawConnection(parent, child)
 
 
     # Private interface
     _FOREST_NODE_DATA_KEY = 0
+
+
+    class _DrawingConnectionLineToNothing(Exception): pass
 
 
     @staticmethod
@@ -78,20 +82,38 @@ class GraphView(QGraphicsView):
     @staticmethod
     def _calcNewChildPosition(parent: QGraphicsItem) -> QPointF:
         x = parent.pos().x() +  GraphView.HORIZONTAL_STEP
+
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
-        parent_children_num = len(parent_forest_node.successors)
-        y = parent.pos().y() + parent_children_num * GraphView.VERTICAL_STEP
+        if parent_forest_node.is_leaf():
+            delta_y = 0
+        else:
+            parent_width = parent_forest_node.calc_subtree_width()
+            delta_y = parent_width * GraphView.VERTICAL_STEP
+        y = parent.pos().y() + delta_y
+
         return QPointF(x, y)
 
     @staticmethod
-    def _calcConnectionPointForLeft(item: QGraphicsItem) -> QPointF:
+    def _calcConnectionPointForParent(item: QGraphicsItem) -> QPointF:
         x = item.pos().x() + GraphNode.WIDTH
         y = item.pos().y() + GraphNode.HEIGHT / 2
         return QPointF(x, y)
 
     @staticmethod
-    def _calcConnectionPointForRight(item: QGraphicsItem) -> QPointF:
+    def _calcConnectionPointForChild(item: QGraphicsItem) -> QPointF:
         x = item.pos().x()
+        y = item.pos().y() + GraphNode.HEIGHT / 2
+        return QPointF(x, y)
+
+    @staticmethod
+    def _calcBranchPointForParent(item: GraphNode) -> QPointF:
+        x = item.pos().x() + GraphNode.WIDTH + GraphView.BRANCH_INDENT
+        y = item.pos().y() + GraphNode.HEIGHT / 2
+        return QPointF(x, y)
+
+    @staticmethod
+    def _calcBranchPointForChild(item: GraphNode) -> QPointF:
+        x = item.pos().x() - GraphView.HORIZONTAL_GAP + GraphView.BRANCH_INDENT
         y = item.pos().y() + GraphNode.HEIGHT / 2
         return QPointF(x, y)
 
@@ -103,45 +125,100 @@ class GraphView(QGraphicsView):
         graph_node.moveBy(position.x(), position.y())
         return graph_node
 
-    def _drawConnectionLine(self, left: QGraphicsItem, right: QGraphicsItem):
-        left_point = GraphView._calcConnectionPointForLeft(left)
-        right_point = GraphView._calcConnectionPointForRight(right)
-        connection_line = QGraphicsLineItem(left_point.x(), left_point.y(), right_point.x(), right_point.y())
+    def _drawConnection(self, parent: QGraphicsItem, child: QGraphicsItem):
+        parent_conn_point = GraphView._calcConnectionPointForParent(parent)
+        child_conn_point = GraphView._calcConnectionPointForChild(child)
+        lines = []
+
+        new_parents_children_number = len(parent.data(GraphView._FOREST_NODE_DATA_KEY).successors)
+        if new_parents_children_number == 0:
+            raise GraphView._DrawingConnectionLineToNothing
+
+        elif new_parents_children_number == 1:
+            connection_line = QGraphicsLineItem(parent_conn_point.x(), parent_conn_point.y(),
+                                                child_conn_point.x(), child_conn_point.y())
+            lines.append(connection_line)
+        else:
+            upper_branch_point = QPointF(parent_conn_point.x() + GraphView.BRANCH_INDENT,  parent_conn_point.y())
+            lower_branch_x = parent_conn_point.x() + GraphView.BRANCH_INDENT
+            lower_branch_y = child_conn_point.y()
+
+            if new_parents_children_number == 2:
+                branch_line = QGraphicsLineItem(upper_branch_point.x(), upper_branch_point.y(),
+                                                lower_branch_x, lower_branch_y)
+                lines.append(branch_line)
+            else:
+                items_in_branch_point = self._scene.items(upper_branch_point)
+                branch_line = None
+                for item in items_in_branch_point:
+                    if isinstance(item, QGraphicsLineItem):
+                        q_line = item.line()
+                        if q_line.x2() == lower_branch_x:
+                            branch_line = item
+                            break
+                branch_line.setLine(upper_branch_point.x(), upper_branch_point.y(), lower_branch_x, lower_branch_y)
+
+            finish_line = QGraphicsLineItem(lower_branch_x, lower_branch_y,
+                                            child_conn_point.x(), child_conn_point.y())
+            lines.append(finish_line)
 
         pen = QPen(GraphView.CONNECTION_LINE_COLOR, GraphView.CONNECTION_LINE_THICKNESS)
-        connection_line.setPen(pen)
-        self._scene.addItem(connection_line)
+        for item in lines:
+            item.setPen(pen)
+            self._scene.addItem(item)
 
     def _moveNodesBelow(self, node: Node):
         node_forest_root = self._forest.find_root(node)
         root_index = self._forest.roots.index(node_forest_root)
-        for root in self._forest.roots[root_index+1:]:
+        for root in reversed(self._forest.roots[root_index+1:]):
             self._moveSubtreeBelow(root)
 
         ancestors = self._forest.get_path_to_root(node)
         for ancestor in reversed(ancestors):
             ancestor_index = ancestor.index_by_parent()
-            for following_ancestor in ancestor.parent.successors[ancestor_index+1:]:
-                self._moveSubtreeBelow(following_ancestor)
+            ancestor_younger_siblings = ancestor.parent.successors[ancestor_index+1:]
+            for ancestor_sibling in reversed(ancestor_younger_siblings):
+                self._moveSubtreeBelow(ancestor_sibling)
 
+            if len(ancestor_younger_siblings) > 0:
+                branch_point = GraphView._calcBranchPointForChild(ancestor.content)
+                items_in_branch_point = self._scene.items(branch_point)
+                for item in items_in_branch_point:
+                    if isinstance(item, QGraphicsLineItem):
+                        q_line = item.line()
+                        if q_line.x1() == branch_point.x():
+                            item.setLine(branch_point.x(), branch_point.y(),
+                                         branch_point.x(), q_line.y2() + GraphView.VERTICAL_STEP)
+                            break
+
+    # TODO: Implement via ConnectionMultiline
     def _moveSubtreeBelow(self, subroot: Node):
         graph_subroot = subroot.content
-        connection_line = self._scene.itemAt(GraphView._calcConnectionPointForRight(graph_subroot), QTransform())
+        branch_point = GraphView._calcBranchPointForParent(graph_subroot)
+        items_in_branch_point = self._scene.items(branch_point)
+        child_point = GraphView._calcConnectionPointForChild(graph_subroot)
+        items_in_child_point = self._scene.items(child_point)
+
+        # TODO: Implement everywhere via moveBelowBy(step)
         graph_subroot.moveBy(0, GraphView.VERTICAL_STEP)
 
-        if subroot.is_successor():
-            left_point = GraphView._calcConnectionPointForLeft(subroot.parent.content)
-            right_point = GraphView._calcConnectionPointForRight(graph_subroot)
-            if isinstance(connection_line, QGraphicsLineItem):
-                connection_line.setLine(left_point.x(), left_point.y(), right_point.x(), right_point.y())
+        for item in items_in_branch_point:
+            if isinstance(item, QGraphicsLineItem):
+                q_line = item.line()
+                if q_line.x1() == branch_point.x():
+                    item.moveBy(0, GraphView.VERTICAL_STEP)
+                    break
+        for item in items_in_child_point:
+            if isinstance(item, QGraphicsLineItem):
+                item.moveBy(0, GraphView.VERTICAL_STEP)
 
-        for successor in subroot.successors:
+        for successor in reversed(subroot.successors):
             self._moveSubtreeBelow(successor)
 
     def _calcNewRootPosition(self) -> QPointF:
         x = GraphView.HORIZONTAL_GAP
         layer = self._forest.calc_width() + 1
-        y = GraphView.VERTICAL_GAP + layer * GraphView.VERTICAL_STEP
+        y = GraphView.VERTICAL_GAP + (layer-1) * GraphView.VERTICAL_STEP
         return QPointF(x, y)
 
 
