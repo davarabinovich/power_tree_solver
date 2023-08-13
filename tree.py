@@ -409,7 +409,7 @@ class Forest:
     def calc_width(self):
         width = 0
         for root in self._roots:
-            width = root.calc_subtree_width()
+            width += root.calc_subtree_width()
         return width
 
 
@@ -417,6 +417,13 @@ class Forest:
     def roots(self):
         return self._roots
 
+
+    def find_root(self, node: Node):
+        self._validate_nodes(node)
+        root_candidate = node.parent
+        while root_candidate.is_successor():
+            root_candidate = root_candidate.parent
+        return root_candidate
 
     # Private part
     class _ForestNode(Node):
