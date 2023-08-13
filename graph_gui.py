@@ -45,34 +45,29 @@ class GraphView(QGraphicsView):
     def addRoot(self):
         position = self._calcNewRootPosition()
         root = self._createNodeOnScene(position)
-        forest_node = self._forest.create_root(root)
-        GraphView._setNodesField(root, "forest_node", forest_node)
+        forest_node = self._forest.create_root()
+        self._linkGraphAndForestNodes(root, forest_node)
 
     # TODO: replace QGraphicsItem with GraphNode
     # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node; \
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
     @pyqtSlot(QGraphicsItem)
     def addChild(self, parent: QGraphicsItem):
-        parent_forest_node = GraphView._getNodesField(parent, "forest_node")
+        parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if len(parent_forest_node.successors) > 0:
             last_parent_child = parent_forest_node.successors[-1]
             self._moveNodesBelow(last_parent_child)
 
         position = GraphView._calcNewChildPosition(parent)
         child = self._createNodeOnScene(position)
-        parent_forest_node = GraphView._getNodesField(parent, "forest_node")
-        forest_node = self._forest.add_leaf(parent_forest_node, child)
-        GraphView._setNodesField(child, "forest_node", forest_node)
+        forest_node = self._forest.add_leaf(parent_forest_node)
+        self._linkGraphAndForestNodes(child, forest_node)
 
         self._drawConnectionLine(parent, child)
 
 
     # Private interface
-    _NODE_DATA_KEYS_DICT = {
-        "forest_node": 0,
-        "layer": 1,
-        "parent": 2
-    }
+    _FOREST_NODE_DATA_KEY = 0
 
     _LINE_DATA_KEYS_DICT = {
         "parent": 0,
@@ -85,6 +80,11 @@ class GraphView(QGraphicsView):
         self._scene.addItem(graph_node)
         graph_node.moveBy(position.x(), position.y())
         return graph_node
+
+    @staticmethod
+    def _linkGraphAndForestNodes(graph_node: GraphNode, forest_node: Node):
+        forest_node.content = graph_node
+        graph_node.setData(GraphView._FOREST_NODE_DATA_KEY, forest_node)
 
     def _drawConnectionLine(self, left: QGraphicsItem, right: QGraphicsItem):
         left_point = GraphView._calcConnectionPointForLeft(left)
@@ -124,7 +124,7 @@ class GraphView(QGraphicsView):
     @staticmethod
     def _calcNewChildPosition(parent: QGraphicsItem) -> QPointF:
         x = parent.pos().x() +  GraphView.HORIZONTAL_STEP
-        parent_forest_node = GraphView._getNodesField(parent, "forest_node")
+        parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         parent_children_num = len(parent_forest_node.successors)
         y = parent.pos().y() + parent_children_num * GraphView.VERTICAL_STEP
         return QPointF(x, y)
