@@ -101,6 +101,11 @@ class GraphView(QGraphicsView):
         for root in self._forest.roots[root_index+1:]:
             self._moveSubtreeBelow(root)
 
+        ancestors = self._forest.get_path_to_root(node)
+        for ancestor in reversed(ancestors):
+            ancestor_index = ancestor.index_by_parent()
+            for following_ancestor in ancestor.parent.successors[ancestor_index+1:]:
+                self._moveSubtreeBelow(following_ancestor)
 
 
     def _moveNodeBelow(self, node: GraphNode):

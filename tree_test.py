@@ -582,8 +582,9 @@ class TestNodeIteration(unittest.TestCase):
         for node in tested_root:
             tested_root_flat_view.append(node.content)
         self.assertEqual(tested_root_flat_view, proper_root_flat_view)
+# TODO: Need to test index_by_parent
 
-# TODO: Check equivalency of work of two different methods where it's possible (e. g. add_leaf to None and create_root)
+# TODO: Check equivalency of work of two different methods where it's possible (for example add_leaf to None and create_root)
 class TestForestCreateRoot(unittest.TestCase):
     def test_create_first_root(self):
         tested_forest = Forest.build_forest()

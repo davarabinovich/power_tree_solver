@@ -140,6 +140,12 @@ class Node:
 
         return width
 
+    # TODO: it is used in only graph_gui. Need to be used in Tree module.
+    def index_by_parent(self):
+        parent = self._parent
+        index = parent.successors.index(self)
+        return index
+
     def is_root(self):
         return self._parent is None
 
@@ -424,6 +430,18 @@ class Forest:
         while root_candidate.is_successor():
             root_candidate = root_candidate.parent
         return root_candidate
+
+    def get_path_to_root(self, node: Node) -> list:
+        path = []
+        if node.is_root() or node.parent.is_root():
+            return path
+
+        cur_ancestor = node.parent
+        while cur_ancestor.is_successor():
+            path.append(cur_ancestor)
+            cur_ancestor = cur_ancestor.parent
+        return path
+
 
     # Private part
     class _ForestNode(Node):
