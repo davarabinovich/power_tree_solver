@@ -69,10 +69,32 @@ class GraphView(QGraphicsView):
     # Private interface
     _FOREST_NODE_DATA_KEY = 0
 
-    _LINE_DATA_KEYS_DICT = {
-        "parent": 0,
-        "child": 1
-    }
+
+    @staticmethod
+    def _linkGraphAndForestNodes(graph_node: GraphNode, forest_node: Node):
+        forest_node.content = graph_node
+        graph_node.setData(GraphView._FOREST_NODE_DATA_KEY, forest_node)
+
+    @staticmethod
+    def _calcNewChildPosition(parent: QGraphicsItem) -> QPointF:
+        x = parent.pos().x() +  GraphView.HORIZONTAL_STEP
+        parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
+        parent_children_num = len(parent_forest_node.successors)
+        y = parent.pos().y() + parent_children_num * GraphView.VERTICAL_STEP
+        return QPointF(x, y)
+
+    @staticmethod
+    def _calcConnectionPointForLeft(item: QGraphicsItem) -> QPointF:
+        x = item.pos().x() + GraphNode.WIDTH
+        y = item.pos().y() + GraphNode.HEIGHT / 2
+        return QPointF(x, y)
+
+    @staticmethod
+    def _calcConnectionPointForRight(item: QGraphicsItem) -> QPointF:
+        x = item.pos().x()
+        y = item.pos().y() + GraphNode.HEIGHT / 2
+        return QPointF(x, y)
+
 
     def _createNodeOnScene(self, position: QPointF) -> GraphNode:
         graph_node = GraphNode()
@@ -80,11 +102,6 @@ class GraphView(QGraphicsView):
         self._scene.addItem(graph_node)
         graph_node.moveBy(position.x(), position.y())
         return graph_node
-
-    @staticmethod
-    def _linkGraphAndForestNodes(graph_node: GraphNode, forest_node: Node):
-        forest_node.content = graph_node
-        graph_node.setData(GraphView._FOREST_NODE_DATA_KEY, forest_node)
 
     def _drawConnectionLine(self, left: QGraphicsItem, right: QGraphicsItem):
         left_point = GraphView._calcConnectionPointForLeft(left)
@@ -107,62 +124,6 @@ class GraphView(QGraphicsView):
             for following_ancestor in ancestor.parent.successors[ancestor_index+1:]:
                 self._moveSubtreeBelow(following_ancestor)
 
-
-    def _moveNodeBelow(self, node: GraphNode):
-        delta_y = GraphView.VERTICAL_GAP + GraphNode.HEIGHT
-        node.moveBy(0, delta_y)
-        GraphView._incNodesField(node, "layer")
-
-    def _redrawConnectionLine(self, line: QGraphicsLineItem):
-        parent = line.data(GraphView._LINE_DATA_KEYS_DICT["parent"])
-        parent_x, parent_y = GraphView._calcConnectionPointForLeft(parent)
-        child = line.data(GraphView._LINE_DATA_KEYS_DICT["child"])
-        child_x, child_y = GraphView._calcConnectionPointForRight(child)
-        line.setLine(parent_x, parent_y, child_x, child_y)
-
-
-    @staticmethod
-    def _calcNewChildPosition(parent: QGraphicsItem) -> QPointF:
-        x = parent.pos().x() +  GraphView.HORIZONTAL_STEP
-        parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
-        parent_children_num = len(parent_forest_node.successors)
-        y = parent.pos().y() + parent_children_num * GraphView.VERTICAL_STEP
-        return QPointF(x, y)
-
-    @staticmethod
-    def _calcConnectionPointForLeft(item: QGraphicsItem) -> QPointF:
-        x = item.pos().x() + GraphNode.WIDTH
-        y = item.pos().y() + GraphNode.HEIGHT / 2
-        return QPointF(x, y)
-
-    @staticmethod
-    def _calcConnectionPointForRight(item: QGraphicsItem) -> QPointF:
-        x = item.pos().x()
-        y = item.pos().y() + GraphNode.HEIGHT / 2
-        return QPointF(x, y)
-
-    def _calcNewRootPosition(self) -> QPointF:
-        x = GraphView.HORIZONTAL_GAP
-        layer = self._forest.calc_width() + 1
-        y = GraphView.VERTICAL_GAP + layer * GraphView.VERTICAL_STEP
-        return QPointF(x, y)
-
-
-    @staticmethod
-    def _setNodesField(node: QGraphicsItem, key, value):
-        node.setData(GraphView._NODE_DATA_KEYS_DICT[key], value)
-
-    @staticmethod
-    def _incNodesField(node: QGraphicsItem, key):
-        cur_value = GraphView._getNodesField(node, key)
-        if type(cur_value) is not int:
-            raise ValueError
-        node.setData(GraphView._NODE_DATA_KEYS_DICT[key], cur_value + 1)
-
-    @staticmethod
-    def _getNodesField(node: QGraphicsItem, key):
-        return node.data(GraphView._NODE_DATA_KEYS_DICT[key])
-
     def _moveSubtreeBelow(self, subroot: Node):
         graph_subroot = subroot.content
         connection_line = self._scene.itemAt(GraphView._calcConnectionPointForRight(graph_subroot), QTransform())
@@ -176,6 +137,12 @@ class GraphView(QGraphicsView):
 
         for successor in subroot.successors:
             self._moveSubtreeBelow(successor)
+
+    def _calcNewRootPosition(self) -> QPointF:
+        x = GraphView.HORIZONTAL_GAP
+        layer = self._forest.calc_width() + 1
+        y = GraphView.VERTICAL_GAP + layer * GraphView.VERTICAL_STEP
+        return QPointF(x, y)
 
 
     _is_instance = False
