@@ -432,7 +432,7 @@ class Forest:
             root_candidate = root_candidate.parent
         return root_candidate
 
-    def find_farest_leaf(self, node: Node):
+    def find_furthest_leaf(self, node: Node):
         self._validate_nodes(node)
         if node.is_leaf():
             return node
