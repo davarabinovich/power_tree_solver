@@ -9,7 +9,7 @@ VERSION = (0, 1, "alfa")
 
 def main():
     app = QApplication(sys.argv)
-    ui = CommonGui()
+    ui = CommonGui(app)
     ui.launch()
     sys.exit(app.exec())
 

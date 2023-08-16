@@ -114,13 +114,13 @@ class ConnectionMultiline(QGraphicsItem):
         super().__init__()
 
         parent.childrenLine = self
-        child.parentPort = MultilinePort(multiline=self, portNumber=0)
-        self._width = child.pos().x() - parent.pos().x() + GraphNode.WIDTH
+        child.parentPort = MultilinePort(multiline=self, portNumber=1)
+        self._width = child.pos().x() - parent.pos().x() - GraphNode.WIDTH
         self._height = ConnectionMultiline.LINE_THICKNESS
         self._lines = []
 
-        parent_connection_point = QPointF(parent.pos().x()+GraphNode.WIDTH, parent.pos().y()+GraphNode.HEIGHT/2)
-        child_connection_point = QPointF(child.pos().x(), child.pos().y() + GraphNode.HEIGHT / 2)
+        parent_connection_point = QPointF(0, 0)
+        child_connection_point = QPointF(self._width, 0)
         self._addLine(parent_connection_point, child_connection_point)
 
     def boundingRect(self) -> QRectF:
@@ -134,20 +134,23 @@ class ConnectionMultiline(QGraphicsItem):
             painter.drawLine(line.p1(), line.p2())
 
     def addChild(self, child: QGraphicsItem):
-        children_number = self._getChildrenNumber()
+        self.prepareGeometryChange()
 
-        child_local_position = self.mapFromScene(child.pos())
-        child_connection_point = QPointF(child_local_position.x(), child_local_position.y()+GraphNode.HEIGHT/2)
+        children_number = self._getChildrenNumber()
+        child.parentPort = MultilinePort(multiline=self, portNumber=children_number+1)
+
         bottom_branch_point = QPointF(ConnectionMultiline.BRANCH_INDENT,
                                       self.mapFromScene(child.pos()).y()+GraphNode.HEIGHT/2)
-        self._addLine(bottom_branch_point, child_connection_point)
-
         if children_number == 1:
             top_branch_point = QPointF(ConnectionMultiline.BRANCH_INDENT, 0)
             self._addLine(top_branch_point, bottom_branch_point)
         else:
             branch_line = self._getBranchLine()
             branch_line.setP2(bottom_branch_point)
+
+        child_local_position = self.mapFromScene(child.pos())
+        child_connection_point = QPointF(child_local_position.x(), child_local_position.y() + GraphNode.HEIGHT / 2)
+        self._addLine(bottom_branch_point, child_connection_point)
 
         self._height = child_connection_point.y() + ConnectionMultiline.LINE_THICKNESS/2
 
@@ -161,7 +164,7 @@ class ConnectionMultiline(QGraphicsItem):
         branch_line_p2 = branch_line.p2()
         branch_line.setP2(QPointF(branch_line_p2.x(), branch_line_p2.y() + delta_y))
 
-        for child_line in self._lines[portNumber+1]:
+        for child_line in self._lines[portNumber:]:
             child_line_p1 = child_line.p1()
             child_line_p2 = child_line.p2()
             child_line.setPoints(QPointF(child_line_p1.x(), child_line_p1.y() + delta_y),

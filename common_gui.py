@@ -8,14 +8,14 @@ from graph_gui import *
 class CommonGui:
     class ExtraGui(Exception): pass
 
-    def __init__(self):
+    def __init__(self, app: QApplication):
         if CommonGui._is_instance:
             raise CommonGui.ExtraGui
         self._is_instance = True
 
         self.window = QMainWindow()
         self.ui = Ui_MainWindow()
-        self.ui.setupUi(self.window)
+        self.ui.setupUi(self.window, app)
 
     def launch(self):
         self.window.show()

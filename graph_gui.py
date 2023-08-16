@@ -1,4 +1,9 @@
 
+# Plan of reworking:
+# To try:
+#     - manual control of scene rect
+#     - use different view updating policy (method, see GraphicsView reference, BSP tree)
+
 from settings import *
 from tree import *
 from graph_gui_int import *
@@ -20,12 +25,13 @@ class GraphView(QGraphicsView):
     class ExtraDrawingArea(Exception): pass
 
 
-    def __init__(self, parent: QWidget=None):
+    def __init__(self, app, parent: QWidget=None):
         if GraphView._is_instance:
             raise GraphView.ExtraDrawingArea
         self._is_instance = True
 
         super().__init__(parent)
+        self._app = app
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
 
@@ -36,20 +42,23 @@ class GraphView(QGraphicsView):
 
         self._forest = Forest()
         self.addRoot()
+        print(self._scene.sceneRect())
 
 
     @pyqtSlot()
-    def addRoot(self):
+    def addRoot(self) -> GraphNode:
         position = self._calcNewRootPosition()
         root = self._createNodeOnScene(position)
         forest_node = self._forest.create_root()
         self._linkGraphAndForestNodes(root, forest_node)
 
+        return root
+
     # TODO: replace QGraphicsItem with GraphNode
     # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node;
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
     @pyqtSlot(QGraphicsItem)
-    def addChild(self, parent: QGraphicsItem):
+    def addChild(self, parent: QGraphicsItem) -> GraphNode:
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if len(parent_forest_node.successors) > 0:
             furthest_parent_leaf = self._forest.find_furthest_leaf(parent_forest_node)
@@ -61,6 +70,14 @@ class GraphView(QGraphicsView):
         self._linkGraphAndForestNodes(child, forest_node)
 
         self._drawConnection(parent, child)
+        self._app.processEvents()
+        self._scene.update(self._scene.sceneRect())
+        self.update()
+
+        # print(child.pos())
+        # print(self._scene.sceneRect())
+
+        return child
 
 
     # Private interface
@@ -119,6 +136,7 @@ class GraphView(QGraphicsView):
         graph_node.newChildCalled.connect(self.addChild)
         self._scene.addItem(graph_node)
         graph_node.moveBy(position.x(), position.y())
+
         return graph_node
 
     def _drawConnection(self, parent: QGraphicsItem, child: QGraphicsItem):
@@ -129,6 +147,9 @@ class GraphView(QGraphicsView):
             multiline.moveBy(parent_connection_point.x(), parent_connection_point.y())
         else:
             parent.childrenLine.addChild(child)
+            parent.childrenLine.update()
+
+            print(parent.childrenLine.boundingRect())
 
     def _moveNodesBelow(self, node: Node):
         node_forest_root = self._forest.find_root(node)
@@ -144,8 +165,8 @@ class GraphView(QGraphicsView):
                 self._moveSubtreeBelow(ancestor_sibling)
 
             if len(ancestor_younger_siblings) > 0:
-                top_moving_port = ancestor_younger_siblings[0].parentPort.portNumber
-                ancestor_parent_multiline = ancestor.parentPort.multiline
+                top_moving_port = ancestor_younger_siblings[0].content.parentPort.portNumber
+                ancestor_parent_multiline = ancestor.content.parentPort.multiline
                 ancestor_parent_multiline.stretchBelow(top_moving_port, GraphView.VERTICAL_STEP)
 
     # TODO: Implement via ConnectionMultiline
@@ -153,7 +174,8 @@ class GraphView(QGraphicsView):
     def _moveSubtreeBelow(self, subroot: Node):
         graph_subroot = subroot.content
         graph_subroot.moveBy(0, GraphView.VERTICAL_STEP)
-        graph_subroot.childrenLine.moveBy(0, GraphView.VERTICAL_STEP)
+        if subroot.is_parent():
+            graph_subroot.childrenLine.moveBy(0, GraphView.VERTICAL_STEP)
         for successor in subroot.successors:
             self._moveSubtreeBelow(successor)
 
