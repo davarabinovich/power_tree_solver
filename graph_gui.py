@@ -18,6 +18,9 @@ class GraphView(QGraphicsView):
     VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
     HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
 
+    LINE_COLOR = QColorConstants.Red
+    LINE_THICKNESS = 3
+
     CROSS_X = 20
     CROSS_Y = 200
 
@@ -31,6 +34,8 @@ class GraphView(QGraphicsView):
         self._is_instance = True
 
         super().__init__(parent)
+
+        # TODO: Try to delete
         self._app = app
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
@@ -42,7 +47,6 @@ class GraphView(QGraphicsView):
 
         self._forest = Forest()
         self.addRoot()
-        print(self._scene.sceneRect())
 
 
     @pyqtSlot()
@@ -68,14 +72,7 @@ class GraphView(QGraphicsView):
         child = self._createNodeOnScene(position)
         forest_node = self._forest.add_leaf(parent_forest_node)
         self._linkGraphAndForestNodes(child, forest_node)
-
         self._drawConnection(parent, child)
-        self._app.processEvents()
-        self._scene.update(self._scene.sceneRect())
-        self.update()
-
-        # print(child.pos())
-        # print(self._scene.sceneRect())
 
         return child
 
@@ -106,30 +103,6 @@ class GraphView(QGraphicsView):
 
         return QPointF(x, y)
 
-    @staticmethod
-    def _calcConnectionPointForParent(item: QGraphicsItem) -> QPointF:
-        x = item.pos().x() + GraphNode.WIDTH
-        y = item.pos().y() + GraphNode.HEIGHT / 2
-        return QPointF(x, y)
-
-    @staticmethod
-    def _calcConnectionPointForChild(item: QGraphicsItem) -> QPointF:
-        x = item.pos().x()
-        y = item.pos().y() + GraphNode.HEIGHT / 2
-        return QPointF(x, y)
-
-    @staticmethod
-    def _calcBranchPointForParent(item: GraphNode) -> QPointF:
-        x = item.pos().x() + GraphNode.WIDTH + ConnectionMultiline.BRANCH_INDENT
-        y = item.pos().y() + GraphNode.HEIGHT / 2
-        return QPointF(x, y)
-
-    @staticmethod
-    def _calcBranchPointForChild(item: GraphNode) -> QPointF:
-        x = item.pos().x() - GraphView.HORIZONTAL_GAP + ConnectionMultiline.BRANCH_INDENT
-        y = item.pos().y() + GraphNode.HEIGHT / 2
-        return QPointF(x, y)
-
 
     def _createNodeOnScene(self, position: QPointF) -> GraphNode:
         graph_node = GraphNode()
@@ -142,14 +115,11 @@ class GraphView(QGraphicsView):
     def _drawConnection(self, parent: QGraphicsItem, child: QGraphicsItem):
         if parent.childrenLine is None:
             multiline = ConnectionMultiline(parent, child)
-            self._scene.addItem(multiline)
-            parent_connection_point = self._calcConnectionPointForParent(parent)
-            multiline.moveBy(parent_connection_point.x(), parent_connection_point.y())
         else:
+            multiline = parent.childrenLine
             parent.childrenLine.addChild(child)
-            parent.childrenLine.update()
+        self._addNewConnectionLinesToScene(multiline)
 
-            print(parent.childrenLine.boundingRect())
 
     def _moveNodesBelow(self, node: Node):
         node_forest_root = self._forest.find_root(node)
@@ -175,9 +145,15 @@ class GraphView(QGraphicsView):
         graph_subroot = subroot.content
         graph_subroot.moveBy(0, GraphView.VERTICAL_STEP)
         if subroot.is_parent():
-            graph_subroot.childrenLine.moveBy(0, GraphView.VERTICAL_STEP)
+            graph_subroot.childrenLine.callForAllLines("moveBy", 0, GraphView.VERTICAL_STEP)
         for successor in subroot.successors:
             self._moveSubtreeBelow(successor)
+
+    def _addNewConnectionLinesToScene(self, multiline: ConnectionMultiline):
+        new_lines = multiline.getNewLines()
+        for line in new_lines:
+            self._scene.addItem(line)
+
 
     def _calcNewRootPosition(self) -> QPointF:
         x = GraphView.HORIZONTAL_GAP
