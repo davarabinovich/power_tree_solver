@@ -14,7 +14,7 @@
    <string>Power Tree Solver 0.1 alfa</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="GraphView" name="graphview" native="true">
+   <widget class="NetView" name="graphview" native="true">
     <property name="geometry">
      <rect>
       <x>-1</x>
@@ -39,9 +39,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>GraphView</class>
+   <class>NetView</class>
    <extends>QWidget</extends>
-   <header>graph_gui</header>
+   <header>net_view.py</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

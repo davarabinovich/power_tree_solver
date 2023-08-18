@@ -35,7 +35,7 @@ def is_forest_valid(forest: Forest):
             return False
     return True
 
-def is_forest_tree_valid(root: Forest._ForestNode, forest:Forest):
+def is_forest_tree_valid(root: Forest.ForestNode, forest:Forest):
     if root.get_forest_ref() != forest:
         return False
 

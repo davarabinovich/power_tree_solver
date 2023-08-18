@@ -13,48 +13,40 @@ from graph_gui_int import *
 #       and every forest node stores reference to graph node. The second one probably can be deleted.
 class GraphView(QGraphicsView):
     # Public interface
-    HORIZONTAL_GAP = 50
-    VERTICAL_GAP = 50
+    HORIZONTAL_GAP = 100
+    VERTICAL_GAP = GraphNode.HEIGHT
     VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
     HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
 
     LINE_COLOR = QColorConstants.Red
     LINE_THICKNESS = 3
 
-    CROSS_X = 20
-    CROSS_Y = 200
 
-
-    class ExtraDrawingArea(Exception): pass
-
-
-    def __init__(self, app, parent: QWidget=None):
-        if GraphView._is_instance:
-            raise GraphView.ExtraDrawingArea
-        self._is_instance = True
-
+    def __init__(self, parent: QWidget=None):
         super().__init__(parent)
 
         # TODO: Try to delete
-        self._app = app
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
+        self._forest = Forest()
 
+
+    rootAdded = pyqtSignal()
+
+
+    def addCross(self, position: QPointF) -> CrossIcon:
         cross = CrossIcon()
         self._scene.addItem(cross)
-        cross.moveBy(GraphView.CROSS_X, GraphView.CROSS_Y)
-        cross.clicked.connect(self.addRoot)
+        cross.moveBy(position.x(), position.y())
+        return cross
 
-        self._forest = Forest()
-        self.addRoot()
-
-
-    @pyqtSlot()
-    def addRoot(self) -> GraphNode:
+    def addRoot(self, widget: QWidget, side_widgets: list) -> GraphNode:
         position = self._calcNewRootPosition()
-        root = self._createNodeOnScene(position)
+        root = self._createNodeOnScene(position, widget, side_widgets)
         forest_node = self._forest.create_root()
         self._linkGraphAndForestNodes(root, forest_node)
+
+        self.rootAdded.emit()
 
         return root
 
@@ -104,8 +96,9 @@ class GraphView(QGraphicsView):
         return QPointF(x, y)
 
 
-    def _createNodeOnScene(self, position: QPointF) -> GraphNode:
-        graph_node = GraphNode()
+    # TODO: Need to tune node's dimensions, boundingRect
+    def _createNodeOnScene(self, position: QPointF, widget: QWidget, side_widgets: list) -> GraphNode:
+        graph_node = GraphNode(widget, side_widgets)
         graph_node.newChildCalled.connect(self.addChild)
         self._scene.addItem(graph_node)
         graph_node.moveBy(position.x(), position.y())
@@ -119,7 +112,6 @@ class GraphView(QGraphicsView):
             multiline = parent.childrenLine
             parent.childrenLine.addChild(child)
         self._addNewConnectionLinesToScene(multiline)
-
 
     def _moveNodesBelow(self, node: Node):
         node_forest_root = self._forest.find_root(node)
@@ -160,6 +152,3 @@ class GraphView(QGraphicsView):
         layer = self._forest.calc_width() + 1
         y = GraphView.VERTICAL_GAP + (layer-1) * GraphView.VERTICAL_STEP
         return QPointF(x, y)
-
-
-    _is_instance = False

@@ -10,12 +10,12 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainWindow(object):
-    def setupUi(self, MainWindow, app):
+    def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1249, 819)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.graphview = GraphView(app, parent=self.centralwidget)
+        self.graphview = NetView(parent=self.centralwidget)
         self.graphview.setGeometry(QtCore.QRect(-1, -1, 1251, 771))
         self.graphview.setObjectName("graphview")
         MainWindow.setCentralWidget(self.centralwidget)
@@ -33,4 +33,4 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Power Tree Solver 0.1 alfa"))
-from graph_gui import GraphView
+from net_view import NetView

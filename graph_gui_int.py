@@ -3,7 +3,9 @@ from collections import namedtuple
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
+
 from settings import *
+from source_node import *
 
 
 MultilinePort = namedtuple('MultilinePort', 'multiline portNumber')
@@ -11,32 +13,47 @@ MultilinePort = namedtuple('MultilinePort', 'multiline portNumber')
 
 class GraphNode(QGraphicsObject):
     # Public interface
-    WIDTH = 100
-    HEIGHT = 50
-    ROUNDING = 5
+    WIDTH = 200
+    HEIGHT = 75
+    ROUNDING = 10
 
     FILLING_COLOR = QColorConstants.Black
     OUTLINE_COLOR = QColorConstants.Yellow
     OUTLINE_THICKNESS = 5
+    HALF_OUTLINE_THICKNESS = OUTLINE_THICKNESS / 2
 
     CROSS_GAP = 5
 
-    def __init__(self):
+    WIDGET_VERTICAL_GAP = 5
+    WIDGET_HORIZONTAL_GAP = 5
+    WIDGET_STEP = 50
+
+    def __init__(self, widget: QWidget, side_widgets: list):
         super().__init__(None)
         self.parentPort = None
         self.childrenLine = None
 
-        cross = CrossIcon(self)
-        cross.clicked.connect(self._receiveNewChildClick)
-        cross.moveBy(GraphNode.WIDTH+GraphNode.CROSS_GAP, 0)
+        proxy_widget = QGraphicsProxyWidget(self)
+        proxy_widget.setWidget(widget)
+        proxy_widget.moveBy(GraphNode.WIDGET_HORIZONTAL_GAP, GraphNode.WIDGET_VERTICAL_GAP)
+
+        side_widget_points = GraphNode._calcSideWidgetsCoords(len(side_widgets))
+        max_widget_width = 0
+        for index in range(len(side_widgets)):
+            widget = side_widgets[index]
+            widget.setParentItem(self)
+            widget.moveBy(side_widget_points[index].x(), side_widget_points[index].y())
+
+            widget_width = widget.getWidthWithText()
+            if widget_width > max_widget_width:
+                max_widget_width = widget_width
+
+        self._width = GraphNode.WIDTH + GraphNode.CROSS_GAP + max_widget_width
 
     def boundingRect(self) -> QRectF:
-        xl = -GraphNode.OUTLINE_THICKNESS / 2
-        yt = -GraphNode.OUTLINE_THICKNESS / 2
-        delta_x = GraphNode.WIDTH + GraphNode.CROSS_GAP + CrossIcon.DIAMETER
-        delta_y = GraphNode.HEIGHT + GraphNode.OUTLINE_THICKNESS
-        rect = QRectF(xl, yt, delta_x, delta_y)
-
+        top_left_point = QPointF(-GraphNode.HALF_OUTLINE_THICKNESS, -GraphNode.HALF_OUTLINE_THICKNESS)
+        bottom_right_point = QPointF(self._width, GraphNode.HEIGHT+GraphNode.HALF_OUTLINE_THICKNESS)
+        rect = QRectF(top_left_point, bottom_right_point)
         return rect
 
     def paint(self, painter: QPainter=None, *args, **kwargs):
@@ -71,6 +88,15 @@ class GraphNode(QGraphicsObject):
     def _receiveNewChildClick(self):
         self.newChildCalled.emit(self)
 
+    @staticmethod
+    def _calcSideWidgetsCoords(side_widgets_num):
+        coords = []
+        for index in range(side_widgets_num):
+            coord = QPointF(GraphNode.WIDTH + GraphNode.WIDGET_HORIZONTAL_GAP,
+                            GraphNode.WIDGET_VERTICAL_GAP + index * GraphNode.WIDGET_STEP)
+            coords.append(coord)
+        return coords
+
 
 class CrossIcon(QGraphicsWidget):
     # Public interface
@@ -81,14 +107,30 @@ class CrossIcon(QGraphicsWidget):
     LINE_COLOR = QColorConstants.White
     LINE_THICKNESS = 3
 
+    TEXT_POINT_SIZE = 9
+    TEXT_HORIZONTAL_GAP = 3
+    TEXT_VERTICAL_GAP = -2
+
     LINE_GAP = (DIAMETER - LINE_LENGTH) / 2
     RADIUS = DIAMETER / 2
 
-    def __init__(self, parent: QGraphicsItem=None):
+    def __init__(self, parent: QGraphicsItem=None, label: str=""):
         super().__init__(parent)
 
+        label = QGraphicsSimpleTextItem(label, self)
+        font = label.font()
+        font.setPointSize(CrossIcon.TEXT_POINT_SIZE)
+        label.setFont(font)
+
+        label.moveBy(CrossIcon.DIAMETER + CrossIcon.TEXT_HORIZONTAL_GAP, CrossIcon.TEXT_VERTICAL_GAP)
+        self._label_width = label.boundingRect().width()
+
     def boundingRect(self) -> QRectF:
-        rect = QRectF(0, 0, CrossIcon.DIAMETER, CrossIcon.DIAMETER)
+        if self._label_width < CrossIcon.DIAMETER:
+            width = CrossIcon.DIAMETER
+        else:
+            width = self._label_width
+        rect = QRectF(0, 0, width, CrossIcon.DIAMETER)
         return rect
 
     def paint(self, painter: QPainter=None, *args, **kwargs):
@@ -107,6 +149,13 @@ class CrossIcon(QGraphicsWidget):
         left_point = QPointF(CrossIcon.LINE_GAP, CrossIcon.RADIUS)
         right_point = QPointF(CrossIcon.DIAMETER-CrossIcon.LINE_GAP, CrossIcon.RADIUS)
         painter.drawLine(left_point, right_point)
+
+    def getWidthWithText(self):
+        if self._label_width < CrossIcon.DIAMETER:
+            width = CrossIcon.DIAMETER
+        else:
+            width = self._label_width
+        return width
 
     def mousePressEvent(self, event, QGraphicsSceneMouseEvent=None):
         self.clicked.emit()
