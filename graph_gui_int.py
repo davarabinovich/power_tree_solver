@@ -28,7 +28,7 @@ class GraphNode(QGraphicsObject):
     WIDGET_HORIZONTAL_GAP = 5
     WIDGET_STEP = 50
 
-    def __init__(self, widget: QWidget, side_widgets: list):
+    def __init__(self, widget: QWidget=None, side_widgets: list=None):
         super().__init__(None)
         self.parentPort = None
         self.childrenLine = None
@@ -37,18 +37,22 @@ class GraphNode(QGraphicsObject):
         proxy_widget.setWidget(widget)
         proxy_widget.moveBy(GraphNode.WIDGET_HORIZONTAL_GAP, GraphNode.WIDGET_VERTICAL_GAP)
 
-        side_widget_points = GraphNode._calcSideWidgetsCoords(len(side_widgets))
-        max_widget_width = 0
-        for index in range(len(side_widgets)):
-            widget = side_widgets[index]
-            widget.setParentItem(self)
-            widget.moveBy(side_widget_points[index].x(), side_widget_points[index].y())
+        if side_widgets is not None:
+            side_widget_points = GraphNode._calcSideWidgetsCoords(len(side_widgets))
+            max_widget_width = 0
+            for index in range(len(side_widgets)):
+                widget = side_widgets[index]
+                widget.setParentItem(self)
+                widget.moveBy(side_widget_points[index].x(), side_widget_points[index].y())
+                widget.clicked.connect(self._receiveSideWidgetClick)
 
-            widget_width = widget.getWidthWithText()
-            if widget_width > max_widget_width:
-                max_widget_width = widget_width
+                widget_width = widget.getWidthWithText()
+                if widget_width > max_widget_width:
+                    max_widget_width = widget_width
 
-        self._width = GraphNode.WIDTH + GraphNode.CROSS_GAP + max_widget_width
+            self._width = GraphNode.WIDTH + GraphNode.CROSS_GAP + max_widget_width
+        else:
+            self._width = GraphNode.WIDTH
 
     def boundingRect(self) -> QRectF:
         top_left_point = QPointF(-GraphNode.HALF_OUTLINE_THICKNESS, -GraphNode.HALF_OUTLINE_THICKNESS)
@@ -63,7 +67,7 @@ class GraphNode(QGraphicsObject):
         painter.setBrush(brush)
         painter.drawRoundedRect(0, 0, GraphNode.WIDTH, GraphNode.HEIGHT, GraphNode.ROUNDING, GraphNode.ROUNDING)
 
-    newChildCalled = pyqtSignal(QGraphicsItem)
+    sideWidgetClicked = pyqtSignal(QGraphicsItem, int)
 
     # TODO: This module doesn't know about scene, but this functions invokes pos(), that assumes, that scene is set.
     #       need to invent correct way to place and use this code
@@ -84,9 +88,11 @@ class GraphNode(QGraphicsObject):
 
 
     # Private part
-    @pyqtSlot()
-    def _receiveNewChildClick(self):
-        self.newChildCalled.emit(self)
+    @pyqtSlot(QGraphicsWidget)
+    def _receiveSideWidgetClick(self, side_widget: QGraphicsWidget):
+        side_widgets = self.childItems()
+        widget_num = side_widgets.index(side_widget) - 1
+        self.sideWidgetClicked.emit(self, widget_num)
 
     @staticmethod
     def _calcSideWidgetsCoords(side_widgets_num):
@@ -158,14 +164,14 @@ class CrossIcon(QGraphicsWidget):
         return width
 
     def mousePressEvent(self, event, QGraphicsSceneMouseEvent=None):
-        self.clicked.emit()
+        self.clicked.emit(self)
 
-    clicked = pyqtSignal()
+    clicked = pyqtSignal(QGraphicsWidget)
 
 
 class ConnectionMultiline():
     # Public interface
-    BRANCH_INDENT = 20
+    BRANCH_INDENT = 100
 
     LINE_COLOR = QColorConstants.Red
     LINE_THICKNESS = 3

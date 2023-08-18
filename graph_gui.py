@@ -13,7 +13,7 @@ from graph_gui_int import *
 #       and every forest node stores reference to graph node. The second one probably can be deleted.
 class GraphView(QGraphicsView):
     # Public interface
-    HORIZONTAL_GAP = 100
+    HORIZONTAL_GAP = 150
     VERTICAL_GAP = GraphNode.HEIGHT
     VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
     HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
@@ -31,7 +31,7 @@ class GraphView(QGraphicsView):
         self._forest = Forest()
 
 
-    rootAdded = pyqtSignal()
+    nodeSideWidgetClicked = pyqtSignal(QGraphicsItem, int)
 
 
     def addCross(self, position: QPointF) -> CrossIcon:
@@ -40,28 +40,25 @@ class GraphView(QGraphicsView):
         cross.moveBy(position.x(), position.y())
         return cross
 
-    def addRoot(self, widget: QWidget, side_widgets: list) -> GraphNode:
+    def addRoot(self, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
         position = self._calcNewRootPosition()
         root = self._createNodeOnScene(position, widget, side_widgets)
         forest_node = self._forest.create_root()
         self._linkGraphAndForestNodes(root, forest_node)
-
-        self.rootAdded.emit()
-
         return root
 
     # TODO: replace QGraphicsItem with GraphNode
     # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node;
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
     @pyqtSlot(QGraphicsItem)
-    def addChild(self, parent: QGraphicsItem) -> GraphNode:
+    def addChild(self, parent: QGraphicsItem, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if len(parent_forest_node.successors) > 0:
             furthest_parent_leaf = self._forest.find_furthest_leaf(parent_forest_node)
             self._moveNodesBelow(furthest_parent_leaf)
 
         position = GraphView._calcNewChildPosition(parent)
-        child = self._createNodeOnScene(position)
+        child = self._createNodeOnScene(position, widget, side_widgets)
         forest_node = self._forest.add_leaf(parent_forest_node)
         self._linkGraphAndForestNodes(child, forest_node)
         self._drawConnection(parent, child)
@@ -97,9 +94,9 @@ class GraphView(QGraphicsView):
 
 
     # TODO: Need to tune node's dimensions, boundingRect
-    def _createNodeOnScene(self, position: QPointF, widget: QWidget, side_widgets: list) -> GraphNode:
+    def _createNodeOnScene(self, position: QPointF, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
         graph_node = GraphNode(widget, side_widgets)
-        graph_node.newChildCalled.connect(self.addChild)
+        graph_node.sideWidgetClicked.connect(self.nodeSideWidgetClicked)
         self._scene.addItem(graph_node)
         graph_node.moveBy(position.x(), position.y())
 
