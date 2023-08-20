@@ -65,6 +65,11 @@ class NetView(GraphView):
         widget.setPalette(palette)
         input_ui.setupUi(widget)
 
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Base, QColorConstants.White)
+        palette.setColor(QPalette.ColorRole.Text, QColorConstants.Black)
+        input_ui.valueLineEdit.setPalette(palette)
+
         return widget, input_ui
 
     @staticmethod
@@ -99,6 +104,7 @@ class SourceWidget(QWidget):
 
     @pyqtSlot(str)
     def changeValue(self, text: str):
+        print(text)
         self._electric_node.value = float(text)
 
 
