@@ -7,14 +7,11 @@ from main_window import Ui_MainWindow
 class Gui:
     class ExtraGui(Exception): pass
 
-    def __init__(self):
+    def __init__(self, main_window: QMainWindow):
         if Gui._is_instance:
             raise Gui.ExtraGui
         Gui._is_instance = True
-
-        self._window = QMainWindow()
-        self._ui = Ui_MainWindow()
-        self._ui.setupUi(self._window)
+        self._window = main_window
 
     def launch(self):
         self._window.show()

@@ -4,9 +4,6 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
-from settings import *
-from source_node import *
-
 
 MultilinePort = namedtuple('MultilinePort', 'multiline portNumber')
 

@@ -1,12 +1,15 @@
 
-from PyQt6.QtCore import *
+from PyQt6.QtWidgets import QMainWindow
 
-import gui
-import graph_gui
+from main_window import Ui_MainWindow
+from electric_net import *
 
-def configure (ui: common_gui.Ui_MainWindow):
-    ui.graphview.rootAdded.connect()
 
-@pyqtSlot()
-def addRoot():
-    pass
+def config() -> QMainWindow:
+    # net = ElectricNet()
+    main_window = QMainWindow()
+    main_ui = Ui_MainWindow()
+    main_ui.setupUi(main_window)
+    # main_ui.graphview.setElectricNet(net)
+
+    return main_window
