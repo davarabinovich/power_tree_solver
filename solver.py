@@ -4,11 +4,12 @@ from PyQt6.QtCore import *
 from electric_net import *
 
 
-class Solver:
+class Solver(QObject):
     class LoadCalculationForLoad(Exception): pass
     class ConsumptionCalculationForInput(Exception): pass
 
-    def __init__(self, electric_net: ElectricNet):
+    def __init__(self, electric_net: ElectricNet, parent: QObject=None):
+        super().__init__(parent)
         self._electric_net = electric_net
 
     def work(self):

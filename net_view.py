@@ -79,16 +79,15 @@ class NetView(GraphView):
     def updateLoads(self):
         items = self._scene.items()
         for item in items:
-            if not isinstance(item, GraphNode):
-                print("This item is not GraphNode")
-            else:
+            if isinstance(item, GraphNode):
                 child_items = item.childItems()
                 for child_item in child_items:
-                    if not isinstance(item, QGraphicsProxyWidget):
-                        print("This item is not proxy")
-                    else:
+                    if isinstance(item, QGraphicsProxyWidget):
                         widget = child_item.widget()
-
+                        if isinstance(widget, SourceWidget):
+                            widget_node_data: ElectricNode = widget.electric_node.content
+                            widget.loadValueLadel.setText(widget_node_data.load)
+                            print(widget_node_data.load)
 
     _SIDE_WIDGET_KEYS = {
         "Converter": 0,
