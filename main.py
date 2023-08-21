@@ -10,10 +10,11 @@ VERSION = (0, 1, "alfa")
 
 def main():
     app = QApplication(sys.argv)
-    main_window, solution_thread = config()
+    main_window, solving_thread = config()
     gui = Gui(main_window)
     gui.launch()
-    solution_thread.start()
+
+#    solving_thread.start()
     sys.exit(app.exec())
 
 

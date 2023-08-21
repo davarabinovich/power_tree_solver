@@ -11,6 +11,7 @@ from source_node import *
 from load_node import *
 
 
+# TODO: Rename load to consumer
 class NetView(GraphView):
     # Public interface
     CROSS_POSITION = QPointF(20, 200)
@@ -21,6 +22,8 @@ class NetView(GraphView):
         cross.clicked.connect(self._addInput)
         self._electric_net = ElectricNet()
         self._addInput()
+
+    contentChanged = pyqtSignal(name='contentChanged')
 
     @property
     def electric_net(self):
@@ -39,6 +42,10 @@ class NetView(GraphView):
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
+        ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+
+        # TODO: Do using decorators
+        self.contentChanged.emit()
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _addConverter(self, source: GraphNode, parent: Forest.ForestNode):
@@ -52,13 +59,36 @@ class NetView(GraphView):
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
+        ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
 
+        self.contentChanged.emit()
+
+    @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _addLoad(self, source: GraphNode, parent: Forest.ForestNode):
         widget, ui_form = NetView._prepareLoadWidget()
         self.addChild(source, widget)
         new_load = self._electric_net.add_load(parent)
         widget.electric_node = new_load
+
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
+        ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+
+        self.contentChanged.emit()
+
+    @pyqtSlot()
+    def updateLoads(self):
+        items = self._scene.items()
+        for item in items:
+            if not isinstance(item, GraphNode):
+                print("This item is not GraphNode")
+            else:
+                child_items = item.childItems()
+                for child_item in child_items:
+                    if not isinstance(item, QGraphicsProxyWidget):
+                        print("This item is not proxy")
+                    else:
+                        widget = child_item.widget()
+
 
     _SIDE_WIDGET_KEYS = {
         "Converter": 0,

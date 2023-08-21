@@ -12,7 +12,7 @@ MultilinePort = namedtuple('MultilinePort', 'multiline portNumber')
 class GraphNode(QGraphicsObject):
     # Public interface
     WIDTH = 200
-    HEIGHT = 75
+    HEIGHT = 85
     ROUNDING = 10
 
     FILLING_COLOR = QColorConstants.Black
@@ -24,7 +24,7 @@ class GraphNode(QGraphicsObject):
 
     WIDGET_VERTICAL_GAP = 5
     WIDGET_HORIZONTAL_GAP = 5
-    WIDGET_STEP = 50
+    WIDGET_STEP = 65
 
     def __init__(self, widget: QWidget=None, side_widgets: list[CrossIcon]=None):
         super().__init__(None)

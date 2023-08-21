@@ -12,8 +12,12 @@ def config() -> [QMainWindow, Thread]:
     main_ui = Ui_MainWindow()
     main_ui.setupUi(main_window)
 
-    net = main_ui.graphview.electric_net
+    net_view = main_ui.graphview
+    net = net_view.electric_net
     solver = Solver(net)
-    solution_thread = Thread(target=solver.work)
+    net_view.contentChanged.connect(solver.recalculateChanges)
+    solver.loadCalculated.connect(net_view.updateLoads)
 
-    return main_window, solution_thread
+    solving_thread = Thread(target=solver.work)
+
+    return main_window, solving_thread
