@@ -31,7 +31,7 @@ class GraphView(QGraphicsView):
         self._forest = Forest()
 
 
-    nodeSideWidgetClicked = pyqtSignal(QGraphicsItem, int)
+    nodeSideWidgetClicked = pyqtSignal('PyQt_PyObject', int, name='nodeSideWidgetClicked')
 
 
     def addCross(self, position: QPointF) -> CrossIcon:
@@ -50,8 +50,7 @@ class GraphView(QGraphicsView):
     # TODO: replace QGraphicsItem with GraphNode
     # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node;
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
-    @pyqtSlot(QGraphicsItem)
-    def addChild(self, parent: QGraphicsItem, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
+    def addChild(self, parent: GraphNode, widget: QWidget=None, side_widgets: list[CrossIcon]=None) -> GraphNode:
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if len(parent_forest_node.successors) > 0:
             furthest_parent_leaf = self._forest.find_furthest_leaf(parent_forest_node)
@@ -79,7 +78,7 @@ class GraphView(QGraphicsView):
         graph_node.setData(GraphView._FOREST_NODE_DATA_KEY, forest_node)
 
     @staticmethod
-    def _calcNewChildPosition(parent: QGraphicsItem) -> QPointF:
+    def _calcNewChildPosition(parent: GraphNode) -> QPointF:
         x = parent.pos().x() +  GraphView.HORIZONTAL_STEP
 
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
@@ -102,7 +101,7 @@ class GraphView(QGraphicsView):
 
         return graph_node
 
-    def _drawConnection(self, parent: QGraphicsItem, child: QGraphicsItem):
+    def _drawConnection(self, parent: GraphNode, child: GraphNode):
         if parent.childrenLine is None:
             multiline = ConnectionMultiline(parent, child)
         else:

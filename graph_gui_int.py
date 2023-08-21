@@ -1,4 +1,5 @@
 
+from __future__ import annotations
 from collections import namedtuple
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
@@ -25,7 +26,7 @@ class GraphNode(QGraphicsObject):
     WIDGET_HORIZONTAL_GAP = 5
     WIDGET_STEP = 50
 
-    def __init__(self, widget: QWidget=None, side_widgets: list=None):
+    def __init__(self, widget: QWidget=None, side_widgets: list[CrossIcon]=None):
         super().__init__(None)
         self.parentPort = None
         self.childrenLine = None
@@ -64,7 +65,7 @@ class GraphNode(QGraphicsObject):
         painter.setBrush(brush)
         painter.drawRoundedRect(0, 0, GraphNode.WIDTH, GraphNode.HEIGHT, GraphNode.ROUNDING, GraphNode.ROUNDING)
 
-    sideWidgetClicked = pyqtSignal(QGraphicsItem, int)
+    sideWidgetClicked = pyqtSignal('PyQt_PyObject', int, name='sideWidgetClicked')
 
     # TODO: This module doesn't know about scene, but this functions invokes pos(), that assumes, that scene is set.
     #       need to invent correct way to place and use this code
@@ -85,8 +86,8 @@ class GraphNode(QGraphicsObject):
 
 
     # Private part
-    @pyqtSlot(QGraphicsWidget)
-    def _receiveSideWidgetClick(self, side_widget: QGraphicsWidget):
+    @pyqtSlot('PyQt_PyObject')
+    def _receiveSideWidgetClick(self, side_widget: CrossIcon):
         side_widgets = self.childItems()
         widget_num = side_widgets.index(side_widget) - 1
         self.sideWidgetClicked.emit(self, widget_num)
@@ -117,7 +118,7 @@ class CrossIcon(QGraphicsWidget):
     LINE_GAP = (DIAMETER - LINE_LENGTH) / 2
     RADIUS = DIAMETER / 2
 
-    def __init__(self, parent: QGraphicsItem=None, label: str=""):
+    def __init__(self, parent: GraphNode=None, label: str=""):
         super().__init__(parent)
 
         label = QGraphicsSimpleTextItem(label, self)
@@ -163,7 +164,7 @@ class CrossIcon(QGraphicsWidget):
     def mousePressEvent(self, event, QGraphicsSceneMouseEvent=None):
         self.clicked.emit(self)
 
-    clicked = pyqtSignal(QGraphicsWidget)
+    clicked = pyqtSignal('PyQt_PyObject', name='clicked')
 
 
 class ConnectionMultiline():
@@ -175,7 +176,7 @@ class ConnectionMultiline():
 
     class NotAlignedPartners(Exception): pass
 
-    def __init__(self, parent: QGraphicsItem, child: QGraphicsItem):
+    def __init__(self, parent: GraphNode, child: GraphNode):
         if parent.pos().y() != child.pos().y():
             raise ConnectionMultiline.NotAlignedPartners
 
@@ -189,7 +190,7 @@ class ConnectionMultiline():
         child_connection_point = child.calcConnectionPointForChild()
         self._addLine(parent_connection_point, child_connection_point)
 
-    def addChild(self, child: QGraphicsItem):
+    def addChild(self, child: GraphNode):
         children_number = self._getChildrenNumber()
         child.parentPort = MultilinePort(multiline=self, portNumber=children_number+1)
 
@@ -228,7 +229,7 @@ class ConnectionMultiline():
             method = getattr(line, method_name)
             method(*args)
 
-    def getNewLines(self) -> list:
+    def getNewLines(self) -> list[QGraphicsLineItem]:
         children_number = self._getChildrenNumber()
         if children_number == 1:
             return [self._lines[0]]
