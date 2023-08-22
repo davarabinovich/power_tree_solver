@@ -32,7 +32,7 @@ class Solver(QObject):
         if type(source_data.value) is not float:
             return None
 
-        consumption = 0
+        load = 0
         sinks = self._electric_net.get_sinks(source)
         for sink in sinks:
             sink_data: ElectricNode = sink.content
@@ -40,18 +40,18 @@ class Solver(QObject):
                 converter_load = self.calc_and_write_load(sink)
                 if type(converter_load) is float:
                     converter_consumption = self.calc_consumption(sink)
-                    consumption += converter_consumption
+                    load += converter_consumption
                 else:
                     return None
             else:
                 load_value = sink_data.value
                 if type(load_value) is float:
-                    consumption += sink_data.value
+                    load += sink_data.value
                 else:
                     return None
 
-        source_data.consumption = consumption
-        return consumption
+        source_data.load = load
+        return load
 
     def calc_consumption(self, sink: Forest.ForestNode):
         sink_data: ElectricNode = sink.content
@@ -61,7 +61,7 @@ class Solver(QObject):
         if sink_data.type == ElectricNodeType.CONVERTER:
             sink_parent: Forest.ForestNode = sink.parent
             parent_value = sink_parent.content.value
-            consumption = (parent_value / sink_data.value) * sink_data.load
+            consumption = (sink_data.value / parent_value) * sink_data.load
             return consumption
         else:
             return sink_data.value

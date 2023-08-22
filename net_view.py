@@ -75,6 +75,7 @@ class NetView(GraphView):
 
         self.contentChanged.emit()
 
+    # TODO: Very ugly
     @pyqtSlot()
     def updateLoads(self):
         items = self._scene.items()
@@ -82,12 +83,11 @@ class NetView(GraphView):
             if isinstance(item, GraphNode):
                 child_items = item.childItems()
                 for child_item in child_items:
-                    if isinstance(item, QGraphicsProxyWidget):
+                    if isinstance(child_item, QGraphicsProxyWidget):
                         widget = child_item.widget()
                         if isinstance(widget, SourceWidget):
                             widget_node_data: ElectricNode = widget.electric_node.content
-                            widget.loadValueLadel.setText(widget_node_data.load)
-                            print(widget_node_data.load)
+                            widget.ui.loadValueLabel.setText(str(widget_node_data.load))
 
     _SIDE_WIDGET_KEYS = {
         "Converter": 0,
@@ -97,7 +97,7 @@ class NetView(GraphView):
     @staticmethod
     def _prepareSourceWidget() -> tuple[SourceWidget, Ui_SourceWidget]:
         input_ui = Ui_SourceWidget()
-        widget = SourceWidget()
+        widget = SourceWidget(input_ui)
         palette = QPalette(GraphNode.FILLING_COLOR)
         widget.setPalette(palette)
         input_ui.setupUi(widget)
@@ -122,7 +122,7 @@ class NetView(GraphView):
     @staticmethod
     def _prepareLoadWidget() -> tuple[LoadWidget, Ui_LoadWidget]:
         load_ui = Ui_LoadWidget()
-        widget = LoadWidget()
+        widget = LoadWidget(load_ui)
         palette = QPalette(GraphNode.FILLING_COLOR)
         widget.setPalette(palette)
         load_ui.setupUi(widget)
@@ -136,8 +136,9 @@ class NetView(GraphView):
 
 
 class SourceWidget(QWidget):
-    def __init__(self):
+    def __init__(self, ui_from: Ui_SourceWidget):
         super().__init__()
+        self.ui = ui_from
         self._electric_node = None
 
     @property
@@ -152,8 +153,11 @@ class SourceWidget(QWidget):
 
     @pyqtSlot(str)
     def changeValue(self, text: str):
-        print(text)
-        self._electric_node.content.value = float(text)
+        if text != '':
+            new_value = float(text)
+        else:
+            new_value = 0
+        self._electric_node.content.value = new_value
 
     @pyqtSlot('PyQt_PyObject', int)
     def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
@@ -164,8 +168,9 @@ class SourceWidget(QWidget):
 
 
 class LoadWidget(QWidget):
-    def __init__(self):
+    def __init__(self, ui_form: Ui_LoadWidget):
         super().__init__()
+        self.ui = ui_form
         self._electric_node = None
 
     @property
@@ -177,5 +182,8 @@ class LoadWidget(QWidget):
 
     @pyqtSlot(str)
     def changeValue(self, text: str):
-        print(text)
-        self._electric_node.content.value = float(text)
+        if text != '':
+            new_value = float(text)
+        else:
+            new_value = 0
+        self._electric_node.content.value = new_value
