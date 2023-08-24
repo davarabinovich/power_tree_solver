@@ -22,10 +22,16 @@ class Ui_MainWindow(object):
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1249, 22))
         self.menubar.setObjectName("menubar")
+        self.menuFile = QtWidgets.QMenu(parent=self.menubar)
+        self.menuFile.setObjectName("menuFile")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(parent=MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+        self.actionSaveAs = QtGui.QAction(parent=MainWindow)
+        self.actionSaveAs.setObjectName("actionSaveAs")
+        self.menuFile.addAction(self.actionSaveAs)
+        self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -33,4 +39,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Power Tree Solver 0.1 alfa"))
+        self.menuFile.setTitle(_translate("MainWindow", "File"))
+        self.actionSaveAs.setText(_translate("MainWindow", "Save As..."))
 from net_view import NetView
