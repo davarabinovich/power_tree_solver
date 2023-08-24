@@ -9,42 +9,41 @@ from gui import *
 VERSION = (0, 1, "alfa")
 
 
-class TestExtern(QObject):
-    def __init__(self, parent=None):
+class AppSupervisor(QObject):
+    def __init__(self, parent: QObject=None):
         super().__init__(parent)
+        self._active_net = None
 
-    def __del__(self):
-        print("External deleted")
+    def setActiveNet(self, net: ElectricNet):
+        self._active_net = net
 
     @pyqtSlot()
-    def slot(self):
-        print("Captured external")
+    def receiveSaveAsAction(self):
+        self.needToSaveActiveNet.emit(self._active_net)
+
+    needToSaveActiveNet = pyqtSignal('PyQt_PyObject', name='needToSaveActiveNet')
+
 
 def main():
     app = QApplication(sys.argv)
-
     window = QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(window)
-    test_extern = TestExtern()
-    test_intern = config(ui, test_extern)
-    # config(ui, test_extern)
+
+    net_view = ui.graphview
+    net = net_view.electric_net
+    solver = Solver(net)
+    net_view.contentChanged.connect(solver.recalculateChanges)
+    solver.loadCalculated.connect(net_view.updateLoads)
+
+    supervisor = AppSupervisor()
+    supervisor.setActiveNet(net)
+    file_saver = FileSaver()
+    ui.actionSaveAs.triggered.connect(supervisor.receiveSaveAsAction)
+    supervisor.needToSaveActiveNet.connect(file_saver.saveNet)
+
     window.show()
-    # ui.actionSaveAs.triggered.connect(test.slot)
-    # gui = Gui(main_window)
-    # gui.launch()
-
-    # window = QMainWindow()
-    # ui = Ui_MainWindow()ow
-    # ui.setupUi(window)
-    #
-    # test = Test()
-    # ui.actionSaveAs.triggered.connect(test.slot)
-
-    # window.show()
-#    solving_thread.start()
     sys.exit(app.exec())
-
 
 
 if __name__ == '__main__':
