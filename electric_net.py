@@ -8,14 +8,21 @@ class ElectricNodeType(Enum):
     CONVERTER = 2
     LOAD = 3
 
+class ConverterType(Enum):
+    LINEAR = 1
+    SWITCHING = 2
+
 
 class ElectricNode:
     class AccessToLoadLoad(Exception): pass
+    class NotConverter(Exception): pass
 
     def __init__(self, type: ElectricNodeType):
         self._value = 0
         self._type = type
         self._load = 0
+        if type == ElectricNodeType.CONVERTER:
+            self._converter_type = ConverterType.SWITCHING
 
     @property
     def value(self):
@@ -27,6 +34,17 @@ class ElectricNode:
     @property
     def type(self):
         return self._type
+
+    @property
+    def converter_type(self):
+        if self._type != ElectricNodeType.CONVERTER:
+            raise ElectricNode.NotConverter
+        return self._converter_type
+    @converter_type.setter
+    def converter_type(self, type):
+        if self._type != ElectricNodeType.CONVERTER:
+            raise ElectricNode.NotConverter
+        self._converter_type = type
 
     @property
     def load(self):
@@ -53,6 +71,7 @@ class ElectricNet:
     def add_converter(self, parent: Forest.ForestNode) -> Forest.ForestNode:
         node = self._forest.add_leaf(parent)
         converter_data = ElectricNode(ElectricNodeType.CONVERTER)
+        converter_data.converter_type = ConverterType.SWITCHING
         node.content = converter_data
         return node
 

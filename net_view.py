@@ -8,6 +8,7 @@ from electric_net import *
 from graph_gui import *
 from graph_gui_int import *
 from source_node import *
+from converter_node import *
 from load_node import *
 
 
@@ -49,7 +50,7 @@ class NetView(GraphView):
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _addConverter(self, source: GraphNode, parent: Forest.ForestNode):
-        widget, ui_form = NetView._prepareSourceWidget()
+        widget, ui_form = NetView._prepareConverterWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
         converter = self.addChild(source, widget, side_widgets)
         new_converter = self._electric_net.add_converter(parent)
@@ -60,6 +61,8 @@ class NetView(GraphView):
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.linearRadioButton.toggled.connect(widget.changeType)
+        ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
         self.contentChanged.emit()
 
@@ -85,7 +88,7 @@ class NetView(GraphView):
                 for child_item in child_items:
                     if isinstance(child_item, QGraphicsProxyWidget):
                         widget = child_item.widget()
-                        if isinstance(widget, SourceWidget):
+                        if isinstance(widget, SourceWidget) or isinstance(widget, ConverterWidget):
                             widget_node_data: ElectricNode = widget.electric_node.content
                             widget.ui.loadValueLabel.setText(str(widget_node_data.load))
 
@@ -120,6 +123,24 @@ class NetView(GraphView):
         return side_widgets
 
     @staticmethod
+    def _prepareConverterWidget() -> tuple[ConverterWidget, Ui_ConverterWidget]:
+        converter_ui = Ui_ConverterWidget()
+        widget = ConverterWidget(converter_ui)
+        palette = QPalette(GraphNode.FILLING_COLOR)
+        widget.setPalette(palette)
+        converter_ui.setupUi(widget)
+
+        palette = QPalette()
+        palette.setColor(QPalette.ColorRole.Base, QColorConstants.White)
+        palette.setColor(QPalette.ColorRole.Text, QColorConstants.Black)
+        converter_ui.valueLineEdit.setPalette(palette)
+
+        # TODO: app is falling, when already inputed number are fully cleared
+        converter_ui.valueLineEdit.setValidator(QDoubleValidator())
+
+        return widget, converter_ui
+
+    @staticmethod
     def _prepareLoadWidget() -> tuple[LoadWidget, Ui_LoadWidget]:
         load_ui = Ui_LoadWidget()
         widget = LoadWidget(load_ui)
@@ -136,9 +157,9 @@ class NetView(GraphView):
 
 
 class SourceWidget(QWidget):
-    def __init__(self, ui_from: Ui_SourceWidget):
+    def __init__(self, ui_form: Ui_SourceWidget):
         super().__init__()
-        self.ui = ui_from
+        self.ui = ui_form
         self._electric_node = None
 
     @property
@@ -158,6 +179,52 @@ class SourceWidget(QWidget):
         else:
             new_value = 0
         self._electric_node.content.value = new_value
+
+    @pyqtSlot('PyQt_PyObject', int)
+    def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
+        if side_widget_num == NetView._SIDE_WIDGET_KEYS["Converter"]:
+            self.converterAdded.emit(source, self._electric_node)
+        else:
+            self.loadAdded.emit(source, self._electric_node)
+
+
+class ConverterWidget(QWidget):
+    _TYPE_BUTTON_IDS = {
+        "Linear": 1,
+        "Converter": 2
+    }
+
+    def __init__(self, ui_form: Ui_ConverterWidget):
+        super().__init__()
+        self.ui = ui_form
+        self._electric_node = None
+
+    @property
+    def electric_node(self) -> Forest.ForestNode:
+        return self._electric_node
+    @electric_node.setter
+    def electric_node(self, value: Forest.ForestNode):
+        self._electric_node = value
+
+    converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
+    loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
+
+    @pyqtSlot(str)
+    def changeValue(self, text: str):
+        if text != '':
+            new_value = float(text)
+        else:
+            new_value = 0
+        self._electric_node.content.value = new_value
+
+    @pyqtSlot(bool)
+    def changeType(self, is_linear_button_checked: bool):
+        print(id)
+        print(is_linear_button_checked)
+        if is_linear_button_checked is True:
+            self._electric_node.content.converter_type = ConverterType.LINEAR
+        else:
+            self._electric_node.content.converter_type = ConverterType.SWITCHING
 
     @pyqtSlot('PyQt_PyObject', int)
     def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):

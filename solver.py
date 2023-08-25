@@ -59,10 +59,13 @@ class Solver(QObject):
             raise Solver.ConsumptionCalculationForInput
 
         if sink_data.type == ElectricNodeType.CONVERTER:
-            sink_parent: Forest.ForestNode = sink.parent
-            parent_value = sink_parent.content.value
-            consumption = (sink_data.value / parent_value) * sink_data.load
-            return consumption
+            if sink_data.converter_type == ConverterType.LINEAR:
+                return sink_data.load
+            else:
+                sink_parent: Forest.ForestNode = sink.parent
+                parent_value = sink_parent.content.value
+                consumption = (sink_data.value / parent_value) * sink_data.load
+                return consumption
         else:
             return sink_data.value
 
