@@ -19,9 +19,18 @@ class AppSupervisor(QObject):
 
     @pyqtSlot()
     def receiveSaveAsAction(self):
-        file_dialog = QFileDialog()
+        self._file_dialog = QFileDialog()
+        file_dialog = self._file_dialog
+
+        file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        file_dialog.accepted.connect(self.acceptSaving)
         file_dialog.show()
-        self.needToSaveActiveNet.emit(self._active_net)
+        file_dialog.exec()
+
+    @pyqtSlot()
+    def acceptSaving(self):
+        file = self._file_dialog.getSaveFileUrl()
+        self.needToSaveActiveNet.emit()
 
     needToSaveActiveNet = pyqtSignal('PyQt_PyObject', name='needToSaveActiveNet')
 

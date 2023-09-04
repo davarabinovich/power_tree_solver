@@ -12,17 +12,25 @@ class ConverterType(Enum):
     LINEAR = 1
     SWITCHING = 2
 
+class ConsumerType(Enum):
+    CONSTANT_CURRENT = 1
+    RESISTIVE = 2
+
 
 class ElectricNode:
     class AccessToLoadLoad(Exception): pass
     class NotConverter(Exception): pass
+    class NotConsumer(Exception): pass
 
     def __init__(self, type: ElectricNodeType):
         self._value = 0
         self._type = type
         self._load = 0
+
         if type == ElectricNodeType.CONVERTER:
             self._converter_type = ConverterType.SWITCHING
+        if type == ElectricNodeType.LOAD:
+            self._consumer_type = ConsumerType.CONSTANT_CURRENT
 
     @property
     def value(self):
@@ -45,6 +53,17 @@ class ElectricNode:
         if self._type != ElectricNodeType.CONVERTER:
             raise ElectricNode.NotConverter
         self._converter_type = type
+
+    @property
+    def consumer_type(self):
+        if self._type != ElectricNodeType.LOAD:
+            raise ElectricNode.NotConsumer
+        return self._consumer_type
+    @consumer_type.setter
+    def consumer_type(self, type):
+        if self._type != ElectricNodeType.LOAD:
+            raise ElectricNode.NotConsumer
+        self._consumer_type = type
 
     @property
     def load(self):
@@ -78,6 +97,7 @@ class ElectricNet:
     def add_load(self, parent: Forest.ForestNode) -> Forest.ForestNode:
         leaf = self._forest.add_leaf(parent)
         load_data = ElectricNode(ElectricNodeType.LOAD)
+        load_data.consumer_type = ConsumerType.CONSTANT_CURRENT
         leaf.content = load_data
         return leaf
 

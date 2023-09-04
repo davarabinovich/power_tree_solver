@@ -75,6 +75,8 @@ class NetView(GraphView):
 
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.currentRadioButton.toggled.connect(widget.changeType)
+        ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
         self.contentChanged.emit()
 
@@ -219,8 +221,6 @@ class ConverterWidget(QWidget):
 
     @pyqtSlot(bool)
     def changeType(self, is_linear_button_checked: bool):
-        print(id)
-        print(is_linear_button_checked)
         if is_linear_button_checked is True:
             self._electric_node.content.converter_type = ConverterType.LINEAR
         else:
@@ -235,6 +235,11 @@ class ConverterWidget(QWidget):
 
 
 class LoadWidget(QWidget):
+    _TYPE_BUTTON_IDS = {
+        "Constant Current": 1,
+        "Resistive": 2
+    }
+
     def __init__(self, ui_form: Ui_LoadWidget):
         super().__init__()
         self.ui = ui_form
@@ -254,3 +259,10 @@ class LoadWidget(QWidget):
         else:
             new_value = 0
         self._electric_node.content.value = new_value
+
+    @pyqtSlot(bool)
+    def changeType(self, is_current_button_checked: bool):
+        if is_current_button_checked is True:
+            self._electric_node.content.consumer_type = ConsumerType.CONSTANT_CURRENT
+        else:
+            self._electric_node.content.consumer_type = ConsumerType.RESISTIVE

@@ -14,7 +14,7 @@ from graph_gui_int import *
 class GraphView(QGraphicsView):
     # Public interface
     HORIZONTAL_GAP = 150
-    VERTICAL_GAP = GraphNode.HEIGHT
+    VERTICAL_GAP = 50
     VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
     HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
 

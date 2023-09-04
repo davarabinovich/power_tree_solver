@@ -12,7 +12,7 @@ MultilinePort = namedtuple('MultilinePort', 'multiline portNumber')
 class GraphNode(QGraphicsObject):
     # Public interface
     WIDTH = 200
-    HEIGHT = 110
+    HEIGHT = 140
     ROUNDING = 10
 
     FILLING_COLOR = QColorConstants.Black

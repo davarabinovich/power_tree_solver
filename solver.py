@@ -45,10 +45,14 @@ class Solver(QObject):
                     return None
             else:
                 load_value = sink_data.value
-                if type(load_value) is float:
-                    load += sink_data.value
-                else:
+                if type(load_value) is not float:
                     return None
+                else:
+                    if sink_data.consumer_type == ConsumerType.CONSTANT_CURRENT:
+                        load += sink_data.value
+                    else:
+                        current = source_data.value / sink_data.value
+                        load += current
 
         source_data.load = load
         return load
