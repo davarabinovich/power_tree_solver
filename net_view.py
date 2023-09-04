@@ -155,6 +155,8 @@ class NetView(GraphView):
         palette.setColor(QPalette.ColorRole.Text, QColorConstants.Black)
         load_ui.valueLineEdit.setPalette(palette)
 
+        load_ui.valueLineEdit.setValidator(QDoubleValidator())
+
         return widget, load_ui
 
 
@@ -177,7 +179,7 @@ class SourceWidget(QWidget):
     @pyqtSlot(str)
     def changeValue(self, text: str):
         if text != '':
-            new_value = float(text)
+            new_value = float(text.replace(',', '.'))
         else:
             new_value = 0
         self._electric_node.content.value = new_value
@@ -214,7 +216,7 @@ class ConverterWidget(QWidget):
     @pyqtSlot(str)
     def changeValue(self, text: str):
         if text != '':
-            new_value = float(text)
+            new_value = float(text.replace(',', '.'))
         else:
             new_value = 0
         self._electric_node.content.value = new_value
@@ -255,7 +257,9 @@ class LoadWidget(QWidget):
     @pyqtSlot(str)
     def changeValue(self, text: str):
         if text != '':
-            new_value = float(text)
+            # TODO: When enter has been pressed, written number with a comma becomes an exp form number,
+            #       crush when dot is entered
+            new_value = float(text.replace(',', '.'))
         else:
             new_value = 0
         self._electric_node.content.value = new_value
