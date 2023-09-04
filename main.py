@@ -25,20 +25,12 @@ class AppSupervisor(QObject):
                                                     caption="Save Electric Net", filter="Electric Net (*.ens)")
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         self.needToSaveActiveNet.emit(self._active_net, file_path)
-        # self._file_dialog = QFileDialog()
-        # file_dialog = self._file_dialog
-        #
-        # file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-        # file_dialog.accepted.connect(self.acceptSaving)
-        # file_dialog.show()
-        # file_dialog.exec()
-
-    @pyqtSlot()
-    def acceptSaving(self):
-        file = self._file_dialog.getSaveFileUrl()
-        self.needToSaveActiveNet.emit(self._active_net, file)
 
     needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, name='needToSaveActiveNet')
+
+    @pyqtSlot()
+    def receiveQuit(self):
+        QMessageBox.question(self._main_window, title='Do you want to save the net?')
 
 
 def main():
@@ -58,6 +50,8 @@ def main():
     file_saver = FileSaver()
     ui.actionSaveAs.triggered.connect(supervisor.receiveSaveAsAction)
     supervisor.needToSaveActiveNet.connect(file_saver.saveNetToFile)
+
+    app.aboutToQuit.connect()
 
     window.show()
     sys.exit(app.exec())

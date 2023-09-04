@@ -11,6 +11,8 @@ class FileSaver(QObject):
     def saveNetToFile(self, net: ElectricNet, net_file: str):
         self._file = open(net_file, 'w')
         self._net = net
+
+        self._file.write('\n')
         inputs = self._net.get_inputs()
         for input in inputs:
             self._record_subtree(input)
