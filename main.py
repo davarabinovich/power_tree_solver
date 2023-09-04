@@ -10,8 +10,9 @@ VERSION = (0, 1, "alfa")
 
 
 class AppSupervisor(QObject):
-    def __init__(self, parent: QObject=None):
+    def __init__(self, main_window: QWidget, parent: QObject=None):
         super().__init__(parent)
+        self._main_window = main_window
         self._active_net = None
 
     def setActiveNet(self, net: ElectricNet):
@@ -19,20 +20,24 @@ class AppSupervisor(QObject):
 
     @pyqtSlot()
     def receiveSaveAsAction(self):
-        self._file_dialog = QFileDialog()
-        file_dialog = self._file_dialog
-
-        file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-        file_dialog.accepted.connect(self.acceptSaving)
-        file_dialog.show()
-        file_dialog.exec()
+        file_url_tuple = QFileDialog.getSaveFileUrl(self._main_window,
+                                                    caption="Save Electric Net", filter="Electric Net (*.ens)")
+        file_path = file_url_tuple[0].toString().removeprefix('file:///')
+        self.needToSaveActiveNet.emit(file_path)
+        # self._file_dialog = QFileDialog()
+        # file_dialog = self._file_dialog
+        #
+        # file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        # file_dialog.accepted.connect(self.acceptSaving)
+        # file_dialog.show()
+        # file_dialog.exec()
 
     @pyqtSlot()
     def acceptSaving(self):
         file = self._file_dialog.getSaveFileUrl()
         self.needToSaveActiveNet.emit()
 
-    needToSaveActiveNet = pyqtSignal('PyQt_PyObject', name='needToSaveActiveNet')
+    needToSaveActiveNet = pyqtSignal(str, name='needToSaveActiveNet')
 
 
 def main():
@@ -47,7 +52,7 @@ def main():
     net_view.contentChanged.connect(solver.recalculateChanges)
     solver.loadCalculated.connect(net_view.updateLoads)
 
-    supervisor = AppSupervisor()
+    supervisor = AppSupervisor(window)
     supervisor.setActiveNet(net)
     file_saver = FileSaver()
     ui.actionSaveAs.triggered.connect(supervisor.receiveSaveAsAction)

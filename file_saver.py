@@ -7,13 +7,10 @@ class FileSaver(QObject):
     def __init__(self, parent: QObject=None):
         super().__init__(parent)
 
-    @pyqtSlot('PyQt_PyObject')
-    def saveNet(self, net: ElectricNet):
-        file = open('electric_net.ens', 'w')
-
-        inputs = net.get_inputs()
-        for cur_input in inputs:
-            self._record_subtree(cur_input)
+    @pyqtSlot(str)
+    def saveNet(self, net_file: str):
+        file = open(net_file, 'w')
+        file.write('strsdf\n\nwerr')
 
     def _record_subtree(self, subroot: Forest.ForestNode):
         pass
