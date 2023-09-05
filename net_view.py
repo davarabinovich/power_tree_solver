@@ -24,10 +24,16 @@ class NetView(GraphView):
     def initNet(self):
         self._electric_net = ElectricNet()
 
+    def setNet(self, net: ElectricNet):
+        self._electric_net = net
+        self.blockSignals(True)
+        for input in self._electric_net.get_inputs():
+            self._placeSubtree(input)
+        self.blockSignals(False)
+
     def initView(self):
         cross = self.addCross(NetView.CROSS_POSITION)
         cross.clicked.connect(self._addInput)
-        self._addInput()
 
     contentChanged = pyqtSignal(name='contentChanged')
 
@@ -36,8 +42,42 @@ class NetView(GraphView):
         return self._electric_net
 
     # Private part
+    def _placeSubtree(self, subroot: Forest.ForestNode, parent_graph_node: GraphNode | None = None):
+        subroot_data: ElectricNode = subroot.content
+        if subroot_data.type == ElectricNodeType.INPUT:
+            graph_node = self._addInput()
+        elif subroot_data.type == ElectricNodeType.CONVERTER:
+            graph_node = self._addConverter(parent_graph_node, subroot.parent)
+        else:
+            graph_node = self._addLoad(parent_graph_node, subroot.parent)
+
+        for child_item in graph_node.childItems():
+            if isinstance(child_item, QGraphicsProxyWidget):
+                widget = child_item.widget()
+                widget.ui.valueLineEdit.setText(str(subroot.content.value))
+                if not isinstance(widget, LoadWidget):
+                    widget.ui.loadValueLabel.setText(str(subroot.content.load))
+                    if isinstance(widget, ConverterWidget):
+                        if subroot.content.converter_type == ConverterType.SWITCHING:
+                            widget.ui.switchingRadioButton.setEnabled(True)
+                            widget.ui.linearRadioButton.setEnabled(False)
+                        else:
+                            widget.ui.switchingRadioButton.setEnabled(False)
+                            widget.ui.linearRadioButton.setEnabled(True)
+                else:
+                    if subroot.content.consumer_type == ConsumerType.CONSTANT_CURRENT:
+                        widget.ui.currentRadioButton.setEnabled(True)
+                        widget.ui.resistiveRadioButton.setDisabled(True)
+                    else:
+                        widget.ui.currentRadioButton.setDisabled(True)
+                        widget.ui.resistiveRadioButton.setEnabled(True)
+
+        # TODO: Neet to eliminate term 'input'
+        for sink in self._electric_net.get_sinks(subroot):
+            self._placeSubtree(sink, graph_node)
+
     @pyqtSlot()
-    def _addInput(self):
+    def _addInput(self) -> GraphNode:
         widget, ui_form = NetView._prepareSourceWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
         input = self.addRoot(widget, side_widgets)
@@ -52,9 +92,10 @@ class NetView(GraphView):
 
         # TODO: Do using decorators
         self.contentChanged.emit()
+        return input
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
-    def _addConverter(self, source: GraphNode, parent: Forest.ForestNode):
+    def _addConverter(self, source: GraphNode, parent: Forest.ForestNode) -> GraphNode:
         widget, ui_form = NetView._prepareConverterWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
         converter = self.addChild(source, widget, side_widgets)
@@ -70,11 +111,12 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
         self.contentChanged.emit()
+        return converter
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
-    def _addLoad(self, source: GraphNode, parent: Forest.ForestNode):
+    def _addLoad(self, source: GraphNode, parent: Forest.ForestNode) -> GraphNode:
         widget, ui_form = NetView._prepareLoadWidget()
-        self.addChild(source, widget)
+        load = self.addChild(source, widget)
         new_load = self._electric_net.add_load(parent)
         widget.electric_node = new_load
 
@@ -84,6 +126,7 @@ class NetView(GraphView):
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
         self.contentChanged.emit()
+        return load
 
     # TODO: Very ugly
     @pyqtSlot()

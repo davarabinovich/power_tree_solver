@@ -44,24 +44,24 @@ class AppSupervisor(QObject):
         self._solver.setNet(self._ui.graphview.electric_net)
         self._active_net = self._ui.graphview.electric_net
         self._ui.graphview.initView()
+        self._ui.graphview._addInput()
 
         self._ui.actionCreateNew.setDisabled(True)
         self._ui.actionSaveAs.setEnabled(True)
 
     @pyqtSlot()
     def receiveLoadFromAction(self):
-        self.receiveQuit()
+        if self._active_net is not None:
+            self.receiveQuit()
 
         file_url_tuple = QFileDialog.getOpenFileUrl(self._main_window,
                                                     caption="Open Electric Net", filter="Electric Net (*.ens)")
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         file_loader = FileLoader()
         net = file_loader.load_net_from_file(file_path)
-
-        self._ui.graphview.initNet()
-        self._solver.setNet(self._ui.graphview.electric_net)
-        self._active_net = self._ui.graphview.electric_net
-        self._ui.graphview.initView()
+        self._solver.setNet(net)
+        self._active_net = net
+        self._ui.graphview.setNet(net)
 
         self._ui.actionCreateNew.setDisabled(True)
         self._ui.actionSaveAs.setEnabled(True)
