@@ -19,18 +19,26 @@ class AppSupervisor(QObject):
         self._active_net = net
 
     # TODO: Ensure, that it's not needed to resolve the net manually when saving is called
+    # TODO: Program crushes, when cancel is pressed
     @pyqtSlot()
     def receiveSaveAsAction(self):
         file_url_tuple = QFileDialog.getSaveFileUrl(self._main_window,
-                                                    caption="Save Electric Net", filter="Electric Net (*.ens)")
+                                                          caption="Save Electric Net", filter="Electric Net (*.ens)")
+        if file_url_tuple[0].isEmpty():
+            return
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         self.needToSaveActiveNet.emit(self._active_net, file_path)
 
     needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, name='needToSaveActiveNet')
 
     @pyqtSlot()
+    # TODO: It shall be called in only case, when some changes was performed from the last saving.
+    # TODO: Main Window disappear, when messageBox pops up
     def receiveQuit(self):
-        QMessageBox.question(self._main_window, title='Do you want to save the net?')
+        button = QMessageBox.question(self._main_window,
+                                      'The net was probably changed', 'Do you want to save changes in the net?')
+        if button == QMessageBox.StandardButton.Yes:
+            self.receiveSaveAsAction()
 
 
 def main():
@@ -51,7 +59,7 @@ def main():
     ui.actionSaveAs.triggered.connect(supervisor.receiveSaveAsAction)
     supervisor.needToSaveActiveNet.connect(file_saver.saveNetToFile)
 
-    app.aboutToQuit.connect()
+    app.aboutToQuit.connect(supervisor.receiveQuit)
 
     window.show()
     sys.exit(app.exec())
