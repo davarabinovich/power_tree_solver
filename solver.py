@@ -8,9 +8,12 @@ class Solver(QObject):
     class LoadCalculationForLoad(Exception): pass
     class ConsumptionCalculationForInput(Exception): pass
 
-    def __init__(self, electric_net: ElectricNet, parent: QObject=None):
+    def __init__(self, parent: QObject=None):
         super().__init__(parent)
-        self._electric_net = electric_net
+        self._electric_net = None
+
+    def setNet(self, net: ElectricNet):
+        self._electric_net = net
 
     def work(self):
         while(True):

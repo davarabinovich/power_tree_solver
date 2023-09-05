@@ -19,9 +19,14 @@ class NetView(GraphView):
 
     def __init__(self, parent: QWidget=None):
         super().__init__(parent)
+        self._electric_net = None
+
+    def initNet(self):
+        self._electric_net = ElectricNet()
+
+    def initView(self):
         cross = self.addCross(NetView.CROSS_POSITION)
         cross.clicked.connect(self._addInput)
-        self._electric_net = ElectricNet()
         self._addInput()
 
     contentChanged = pyqtSignal(name='contentChanged')

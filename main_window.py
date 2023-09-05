@@ -29,7 +29,14 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.actionSaveAs = QtGui.QAction(parent=MainWindow)
+        self.actionSaveAs.setEnabled(False)
         self.actionSaveAs.setObjectName("actionSaveAs")
+        self.actionLoadFrom = QtGui.QAction(parent=MainWindow)
+        self.actionLoadFrom.setObjectName("actionLoadFrom")
+        self.actionCreateNew = QtGui.QAction(parent=MainWindow)
+        self.actionCreateNew.setObjectName("actionCreateNew")
+        self.menuFile.addAction(self.actionCreateNew)
+        self.menuFile.addAction(self.actionLoadFrom)
         self.menuFile.addAction(self.actionSaveAs)
         self.menubar.addAction(self.menuFile.menuAction())
 
@@ -41,4 +48,6 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Power Tree Solver 0.1 alfa"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
         self.actionSaveAs.setText(_translate("MainWindow", "Save As..."))
+        self.actionLoadFrom.setText(_translate("MainWindow", "Load From..."))
+        self.actionCreateNew.setText(_translate("MainWindow", "Create New"))
 from net_view import NetView

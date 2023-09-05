@@ -6,6 +6,8 @@ from electric_net import *
 class FileSaver(QObject):
     def __init__(self, parent: QObject=None):
         super().__init__(parent)
+        self._file = None
+        self._net = None
 
     @pyqtSlot('PyQt_PyObject', str)
     def saveNetToFile(self, net: ElectricNet, net_file: str):
@@ -66,3 +68,86 @@ class FileSaver(QObject):
                 return 'A'
             else:
                 return 'Ohm'
+
+
+class FileLoader(QObject):
+    class IncorrectNodeLevel(Exception): pass
+    class InvalidRecord(Exception): pass
+
+    def __init__(self, parent: QObject=None):
+        super().__init__(parent)
+        self._file = None
+        self._net: ElectricNet|None = None
+
+    def load_net_from_file(self, path: str):
+        self._file = open(path, 'r')
+        self._net = ElectricNet()
+        self._build_net_by_file(self._file)
+        return self._net
+
+    def _build_net_by_file(self, file):
+        cur_path: list[Forest.ForestNode] = []
+        file_lines = file.read().splitlines()
+        for line in file_lines:
+            if len(line.split()) == 0:
+                continue
+
+            tokens = line.split()
+            leading_token = tokens[0]
+            if leading_token == 'Level':
+                level = int(tokens[1])
+                if level == 1:
+                    node = self._net.create_input()
+                    cur_path = [node]
+                elif level < len(cur_path):
+                    cur_path = cur_path[:level]
+                    parent = cur_path[-2]
+                    node = self._build_node_by_record(parent, tokens)
+                    cur_path[-1] = node
+                elif level == len(cur_path):
+                    parent = cur_path[-2]
+                    node = self._build_node_by_record(parent, tokens)
+                    cur_path[-1] = node
+                elif level == len(cur_path)+1:
+                    parent = cur_path[-1]
+                    node = self._build_node_by_record(parent, tokens)
+                    cur_path.append(node)
+                else:
+                    raise FileLoader.IncorrectNodeLevel
+            elif leading_token == 'Value:':
+                if cur_path[-1].content.type == ElectricNodeType.LOAD:
+                    if cur_path[-1].content.consumer_type == ConsumerType.RESISTIVE:
+                        value = tokens[1][:-3]
+                    else:
+                        value = tokens[1][:-1]
+                else:
+                    value = tokens[1][:-1]
+                cur_path[-1].content.value = float(value)
+            elif leading_token == 'Load:':
+                if cur_path[-1].content.type == ElectricNodeType.LOAD:
+                    raise FileLoader.InvalidRecord
+                load = tokens[1][:-1]
+                cur_path[-1].content.load = float(load)
+
+    def _build_node_by_record(self, parent: Forest.ForestNode, tokens: list[str]) -> Forest.ForestNode:
+        type_token = tokens[2]
+        if type_token == 'Power':
+            raise FileLoader.IncorrectNodeLevel
+        elif type_token == 'Switching':
+            node = self._net.add_converter(parent)
+            node.content.converter_type = ConverterType.SWITCHING
+            return node
+        elif type_token == 'Linear':
+            node = self._net.add_converter(parent)
+            node.content.converter_type = ConverterType.LINEAR
+            return node
+        elif type_token == 'Constant':
+            node = self._net.add_load(parent)
+            node.content.consumer_type = ConsumerType.CONSTANT_CURRENT
+            return node
+        elif type_token == 'Resistive':
+            node = self._net.add_load(parent)
+            node.content.consumer_type = ConsumerType.RESISTIVE
+            return node
+        else:
+            raise FileLoader.InvalidRecord
