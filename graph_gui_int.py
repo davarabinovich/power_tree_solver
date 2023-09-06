@@ -8,7 +8,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 
-MultilinePort = namedtuple('MultilinePort', 'multiline portNumber')
+MultilinePort = namedtuple('MultilinePort', 'multiline portNumber') # Port numbers start from 1
 
 
 class GraphNode(QGraphicsObject):
@@ -208,88 +208,81 @@ class ConnectionMultiline():
             raise ConnectionMultiline.NotAlignedPartners
 
         super().__init__()
+        self._children_lines = []
+        self._parent_line = None
+        self._branch_line = None
 
         parent.childrenLine = self
         child.parentPort = MultilinePort(multiline=self, portNumber=1)
-        self._lines = []
 
         parent_connection_point = parent.calcConnectionPointForParent()
+        branch_point = QPointF(parent_connection_point.x() + ConnectionMultiline.BRANCH_INDENT,
+                               parent_connection_point.y())
         child_connection_point = child.calcConnectionPointForChild()
-        self._addLine(parent_connection_point, child_connection_point)
+        self._parent_line = self._drawLine(parent_connection_point, branch_point)
+        self._addChildLine(parent_connection_point, child_connection_point)
 
     def addChild(self, child: GraphNode):
         children_number = self._getChildrenNumber()
         child.parentPort = MultilinePort(multiline=self, portNumber=children_number+1)
 
-        branch_x = self._lines[0].line().p1().x() + ConnectionMultiline.BRANCH_INDENT
-        bottom_branch_point = QPointF(branch_x, child.calcConnectionPointForChild().y())
+        top_branch_point = self._parent_line.line().p2()
+        bottom_branch_point = QPointF(top_branch_point.x(), child.calcConnectionPointForChild().y())
 
         if children_number == 1:
-            top_branch_point = self._getTopBranchPoint()
-            self._addLine(top_branch_point, bottom_branch_point)
+            self._branch_line = self._drawLine(top_branch_point, bottom_branch_point)
         else:
-            branch_line = self._getBranchLine()
-            branch_qlinef = branch_line.line()
+            branch_qlinef = self._branch_line.line()
             branch_qlinef.setP2(bottom_branch_point)
-            branch_line.setLine(branch_qlinef)
+            self._branch_line.setLine(branch_qlinef)
 
-        self._addLine(bottom_branch_point, child.calcConnectionPointForChild())
+        self._addChildLine(bottom_branch_point, child.calcConnectionPointForChild())
+
+    def deleteChild(self, portNumber): # Port numbers starts from 1
+        pass
 
     # TODO: Annotate all complex types
     def stretchBelow(self, portNumber, delta_y):
-        if portNumber == 0:
+        if portNumber < 2:
             return
 
-        branch_line = self._getBranchLine()
-        branch_qlinef = branch_line.line()
+        branch_qlinef = self._branch_line.line()
         branch_qlinef.setP2(QPointF(branch_qlinef.p2().x(), branch_qlinef.p2().y() + delta_y))
-        branch_line.setLine(branch_qlinef)
+        self._branch_line.setLine(branch_qlinef)
 
-        for child_line in self._lines[portNumber:]:
+        for child_line in self._children_lines[portNumber-1:]:
             child_line_p1 = child_line.line().p1()
             child_line_p2 = child_line.line().p2()
             child_line.setLine(child_line_p1.x(), child_line_p1.y() + delta_y,
                                child_line_p2.x(), child_line_p2.y() + delta_y)
 
     def callForAllLines(self, method_name: str, *args):
-        for line in self._lines:
+        for line in self._children_lines:
             method = getattr(line, method_name)
             method(*args)
 
     def getNewLines(self) -> list[QGraphicsLineItem]:
         children_number = self._getChildrenNumber()
         if children_number == 1:
-            return [self._lines[0]]
+            return [self._children_lines[0]]
         elif children_number == 2:
-            return [self._lines[1], self._lines[2]]
+            return [self._children_lines[1], self._children_lines[2]]
         else:
-            return [self._lines[-1]]
+            return [self._children_lines[-1]]
 
 
     # Private part
-    def _addLine(self, point1: QPointF, point2: QPointF):
+    def _addChildLine(self, point1: QPointF, point2: QPointF):
+        line = self._drawLine(point1, point2)
+        self._children_lines.append(line)
+
+    @staticmethod
+    def _drawLine(point1: QPointF, point2: QPointF) -> QGraphicsLineItem:
         line = QGraphicsLineItem(point1.x(), point1.y(), point2.x(), point2.y())
-        self._lines.append(line)
         pen = QPen(ConnectionMultiline.LINE_COLOR, ConnectionMultiline.LINE_THICKNESS)
         line.setPen(pen)
+        return line
 
     def _getChildrenNumber(self):
-        if len(self._lines) == 1:
-            return 1
-        else:
-            return len(self._lines)-1
-
-    def _getFirstLine(self) -> QGraphicsLineItem:
-        line = self._lines[0]
-        return line
-
-    def _getBranchLine(self) -> QGraphicsLineItem:
-        line = self._lines[1]
-        return line
-
-    def _getTopBranchPoint(self) -> QPointF:
-        first_line = self._getFirstLine().line()
-        top_branch_point_x = first_line.p1().x() + ConnectionMultiline.BRANCH_INDENT
-        top_branch_point_y = first_line.p1().y()
-        top_branch_point = QPointF(top_branch_point_x, top_branch_point_y)
-        return top_branch_point
+        children_number = len(self._children_lines)
+        return children_number

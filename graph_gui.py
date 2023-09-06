@@ -66,6 +66,11 @@ class GraphView(QGraphicsView):
 
     def deleteNode(self, graph_node: GraphNode):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
+
+        # Delete line
+        graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
+
+
         if forest_node.is_leaf():
             self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
