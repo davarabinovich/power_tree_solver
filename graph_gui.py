@@ -34,8 +34,8 @@ class GraphView(QGraphicsView):
     nodeSideWidgetClicked = pyqtSignal('PyQt_PyObject', int, name='nodeSideWidgetClicked')
 
 
-    def addCross(self, position: QPointF) -> CrossIcon:
-        cross = CrossIcon()
+    def addCross(self, position: QPointF) -> PlusIcon:
+        cross = PlusIcon()
         self._scene.addItem(cross)
         cross.moveBy(position.x(), position.y())
         return cross
@@ -50,7 +50,7 @@ class GraphView(QGraphicsView):
     # TODO: replace QGraphicsItem with GraphNode
     # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node;
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
-    def addChild(self, parent: GraphNode, widget: QWidget=None, side_widgets: list[CrossIcon]=None) -> GraphNode:
+    def addChild(self, parent: GraphNode, widget: QWidget=None, side_widgets: list[SideWidget]=None) -> GraphNode:
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if len(parent_forest_node.successors) > 0:
             furthest_parent_leaf = self._forest.find_furthest_leaf(parent_forest_node)
@@ -64,7 +64,13 @@ class GraphView(QGraphicsView):
 
         return child
 
-    def clear(self):
+    def deleteNode(self, graph_node: GraphNode):
+        forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
+        if forest_node.is_leaf():
+            self._forest.delete_leaf(forest_node)
+        self._scene.removeItem(graph_node)
+
+    def reset(self):
         self._scene.clear()
         self._forest = Forest()
 

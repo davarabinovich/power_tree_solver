@@ -101,6 +101,9 @@ class ElectricNet:
         leaf.content = load_data
         return leaf
 
+    def delete_load(self, load: Forest.ForestNode):
+        self._forest.delete_leaf(load)
+
     # TODO: This function assumes, that there is no free sinks; it needs to filter them
     def get_inputs(self) -> list[Forest.ForestNode]:
         inputs = []

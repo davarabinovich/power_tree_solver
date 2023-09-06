@@ -45,7 +45,7 @@ class AppSupervisor(QObject):
     def receiveCreateNewAction(self):
         if self._active_net is not None:
             self.receiveQuit()
-            self._ui.graphview.clear()
+            self._ui.graphview.reset()
 
         self._ui.graphview.initNet()
         self._solver.setNet(self._ui.graphview.electric_net)
@@ -59,7 +59,7 @@ class AppSupervisor(QObject):
     def receiveLoadFromAction(self):
         if self._active_net is not None:
             self.receiveQuit()
-            self._ui.graphview.clear()
+            self._ui.graphview.reset()
 
         file_url_tuple = QFileDialog.getOpenFileUrl(self._main_window,
                                                     caption="Open Electric Net", filter="Electric Net (*.ens)")

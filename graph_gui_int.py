@@ -1,6 +1,8 @@
 
 from __future__ import annotations
 from collections import namedtuple
+from math import *
+
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
 from PyQt6.QtCore import *
@@ -26,7 +28,7 @@ class GraphNode(QGraphicsObject):
     WIDGET_HORIZONTAL_GAP = 5
     WIDGET_STEP = 90
 
-    def __init__(self, widget: QWidget=None, side_widgets: list[CrossIcon]=None):
+    def __init__(self, widget: QWidget=None, side_widgets: list[PlusIcon]=None):
         super().__init__(None)
         self.parentPort = None
         self.childrenLine = None
@@ -87,7 +89,7 @@ class GraphNode(QGraphicsObject):
 
     # Private part
     @pyqtSlot('PyQt_PyObject')
-    def _receiveSideWidgetClick(self, side_widget: CrossIcon):
+    def _receiveSideWidgetClick(self, side_widget: PlusIcon):
         side_widgets = self.childItems()
         widget_num = side_widgets.index(side_widget) - 1
         self.sideWidgetClicked.emit(self, widget_num)
@@ -102,40 +104,74 @@ class GraphNode(QGraphicsObject):
         return coords
 
 
-class CrossIcon(QGraphicsWidget):
-    # Public interface
+class SideWidget(QGraphicsWidget):
     DIAMETER = 12
-    LINE_LENGTH = 8
-
-    CIRCLE_COLOR = QColorConstants.Green
-    LINE_COLOR = QColorConstants.White
-    LINE_THICKNESS = 3
-
+    RADIUS = DIAMETER / 2
     TEXT_POINT_SIZE = 9
     TEXT_HORIZONTAL_GAP = 3
     TEXT_VERTICAL_GAP = -2
 
-    LINE_GAP = (DIAMETER - LINE_LENGTH) / 2
-    RADIUS = DIAMETER / 2
-
     def __init__(self, parent: GraphNode=None, label: str=""):
         super().__init__(parent)
 
-        label = QGraphicsSimpleTextItem(label, self)
-        font = label.font()
-        font.setPointSize(CrossIcon.TEXT_POINT_SIZE)
-        label.setFont(font)
-
-        label.moveBy(CrossIcon.DIAMETER + CrossIcon.TEXT_HORIZONTAL_GAP, CrossIcon.TEXT_VERTICAL_GAP)
-        self._label_width = label.boundingRect().width()
+        self._label = QGraphicsSimpleTextItem(label, self)
+        font = self._label.font()
+        font.setPointSize(SideWidget.TEXT_POINT_SIZE)
+        self._label.setFont(font)
+        self._label.moveBy(SideWidget.DIAMETER + SideWidget.TEXT_HORIZONTAL_GAP, SideWidget.TEXT_VERTICAL_GAP)
 
     def boundingRect(self) -> QRectF:
-        if self._label_width < CrossIcon.DIAMETER:
-            width = CrossIcon.DIAMETER
-        else:
-            width = self._label_width
-        rect = QRectF(0, 0, width, CrossIcon.DIAMETER)
+        width = self.getWidthWithText()
+        rect = QRectF(0, 0, width, SideWidget.DIAMETER)
         return rect
+
+    def getWidthWithText(self):
+        width = SideWidget.DIAMETER + SideWidget.TEXT_HORIZONTAL_GAP + self._label.boundingRect().width()
+        return width
+
+    def mousePressEvent(self, event, QGraphicsSceneMouseEvent=None):
+        self.clicked.emit(self)
+
+    clicked = pyqtSignal('PyQt_PyObject', name='clicked')
+
+
+class PlusIcon(SideWidget):
+    LINE_LENGTH = 8
+    LINE_GAP = (SideWidget.DIAMETER - LINE_LENGTH) / 2
+    CIRCLE_COLOR = QColorConstants.Green
+    LINE_COLOR = QColorConstants.White
+    LINE_THICKNESS = 3
+
+    def __init__(self, parent: GraphNode=None, label: str=""):
+        super().__init__(parent, label)
+
+    def paint(self, painter: QPainter=None, *args, **kwargs):
+        pen = QPen(PlusIcon.CIRCLE_COLOR, 0)
+        brush = QBrush(PlusIcon.CIRCLE_COLOR)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawEllipse(0, 0, PlusIcon.DIAMETER, PlusIcon.DIAMETER)
+
+        pen = QPen(PlusIcon.LINE_COLOR, PlusIcon.LINE_THICKNESS)
+        painter.setPen(pen)
+        top_point = QPointF(PlusIcon.RADIUS, PlusIcon.LINE_GAP)
+        bottom_point = QPointF(PlusIcon.RADIUS, PlusIcon.DIAMETER - PlusIcon.LINE_GAP)
+        painter.drawLine(top_point, bottom_point)
+
+        left_point = QPointF(PlusIcon.LINE_GAP, PlusIcon.RADIUS)
+        right_point = QPointF(PlusIcon.DIAMETER - PlusIcon.LINE_GAP, PlusIcon.RADIUS)
+        painter.drawLine(left_point, right_point)
+
+
+class CrossIcon(SideWidget):
+    LINE_LENGTH = 8
+    LINE_GAP = (SideWidget.DIAMETER - LINE_LENGTH/sqrt(2)) / 2
+    CIRCLE_COLOR = QColorConstants.Red
+    LINE_COLOR = QColorConstants.White
+    LINE_THICKNESS = 3
+
+    def __init__(self, parent: GraphNode=None, label: str=""):
+        super().__init__(parent, label)
 
     def paint(self, painter: QPainter=None, *args, **kwargs):
         pen = QPen(CrossIcon.CIRCLE_COLOR, 0)
@@ -144,27 +180,18 @@ class CrossIcon(QGraphicsWidget):
         painter.setBrush(brush)
         painter.drawEllipse(0, 0, CrossIcon.DIAMETER, CrossIcon.DIAMETER)
 
-        pen = QPen(CrossIcon.LINE_COLOR, CrossIcon.LINE_THICKNESS)
+        near_coord = CrossIcon.LINE_GAP
+        far_coord = CrossIcon.DIAMETER - CrossIcon.LINE_GAP
+
+        pen = QPen(PlusIcon.LINE_COLOR, PlusIcon.LINE_THICKNESS)
         painter.setPen(pen)
-        top_point = QPointF(CrossIcon.RADIUS, CrossIcon.LINE_GAP)
-        bottom_point = QPointF(CrossIcon.RADIUS, CrossIcon.DIAMETER-CrossIcon.LINE_GAP)
-        painter.drawLine(top_point, bottom_point)
+        first_point = QPointF(near_coord, near_coord)
+        second_point = QPointF(far_coord, far_coord)
+        painter.drawLine(first_point, second_point)
 
-        left_point = QPointF(CrossIcon.LINE_GAP, CrossIcon.RADIUS)
-        right_point = QPointF(CrossIcon.DIAMETER-CrossIcon.LINE_GAP, CrossIcon.RADIUS)
-        painter.drawLine(left_point, right_point)
-
-    def getWidthWithText(self):
-        if self._label_width < CrossIcon.DIAMETER:
-            width = CrossIcon.DIAMETER
-        else:
-            width = self._label_width
-        return width
-
-    def mousePressEvent(self, event, QGraphicsSceneMouseEvent=None):
-        self.clicked.emit(self)
-
-    clicked = pyqtSignal('PyQt_PyObject', name='clicked')
+        first_point = QPointF(near_coord, far_coord)
+        second_point = QPointF(far_coord, near_coord)
+        painter.drawLine(first_point, second_point)
 
 
 class ConnectionMultiline():

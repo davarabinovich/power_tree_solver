@@ -104,9 +104,12 @@ class NetView(GraphView):
 
     def placeLoad(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
         widget, ui_form = NetView._prepareLoadWidget()
-        load = self.addChild(source, widget)
+        side_widgets = NetView._prepareConsumerSideWidgets()
+        load = self.addChild(source, widget, side_widgets)
         widget.electric_node = node
 
+        load.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
@@ -152,15 +155,24 @@ class NetView(GraphView):
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _addLoad(self, source: GraphNode, parent: Forest.ForestNode):
         widget, ui_form = NetView._prepareLoadWidget()
-        load = self.addChild(source, widget)
+        side_widgets = NetView._prepareConsumerSideWidgets()
+        consumer = self.addChild(source, widget, side_widgets)
         new_load = self._electric_net.add_load(parent)
         widget.electric_node = new_load
 
+        consumer.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
+        self.contentChanged.emit()
+
+    @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
+    def _deleteNode(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
+        self.deleteNode(graph_node)
+        self._electric_net.delete_load(forest_node)
         self.contentChanged.emit()
 
     # TODO: Very ugly
@@ -202,9 +214,15 @@ class NetView(GraphView):
 
     @staticmethod
     def _prepareSourceSideWidgets() -> list:
-        add_converter_cross = CrossIcon(label="Add Converter")
-        add_load_cross = CrossIcon(label="Add Load")
+        add_converter_cross = PlusIcon(label="Add Converter")
+        add_load_cross = PlusIcon(label="Add Load")
         side_widgets = [add_converter_cross, add_load_cross]
+        return side_widgets
+
+    @staticmethod
+    def _prepareConsumerSideWidgets() -> list[SideWidget]:
+        delete_cross = CrossIcon(label='Delete')
+        side_widgets = [delete_cross]
         return side_widgets
 
     @staticmethod
@@ -320,6 +338,10 @@ class ConverterWidget(QWidget):
 
 
 class LoadWidget(QWidget):
+    _SIDE_WIDGET_KEYS = {
+        "Delete": 0
+    }
+
     _TYPE_BUTTON_IDS = {
         "Constant Current": 1,
         "Resistive": 2
@@ -337,6 +359,8 @@ class LoadWidget(QWidget):
     def electric_node(self, value: Forest.ForestNode):
         self._electric_node = value
 
+    deleted = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='deleted')
+
     @pyqtSlot(str)
     def changeValue(self, text: str):
         if text != '':
@@ -353,3 +377,8 @@ class LoadWidget(QWidget):
             self._electric_node.content.consumer_type = ConsumerType.CONSTANT_CURRENT
         else:
             self._electric_node.content.consumer_type = ConsumerType.RESISTIVE
+
+    @pyqtSlot('PyQt_PyObject', int)
+    def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
+        if side_widget_num == LoadWidget._SIDE_WIDGET_KEYS["Delete"]:
+            self.deleted.emit(source, self._electric_node)
