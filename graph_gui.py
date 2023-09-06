@@ -64,6 +64,10 @@ class GraphView(QGraphicsView):
 
         return child
 
+    def clear(self):
+        self._scene.clear()
+        self._forest = Forest()
+
 
     # Private interface
     _FOREST_NODE_DATA_KEY = 0

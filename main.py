@@ -1,7 +1,7 @@
 
+import typing
 import sys
-from PyQt6.QtWidgets import *
-from PyQt6.QtGui import *
+
 from app_config import *
 from gui import *
 from net_view import *
@@ -30,9 +30,12 @@ class AppSupervisor(QObject):
     needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, name='needToSaveActiveNet')
 
     @pyqtSlot()
-    # TODO: It shall be called in only case, when some changes was performed from the last saving.
+    # TODO: It shall be called in only case, when some changes were performed from the last saving.
     # TODO: Main Window disappear, when messageBox pops up
     def receiveQuit(self):
+        if self._active_net is None:
+            return
+
         button = QMessageBox.question(self._main_window,
                                       'The net was probably changed', 'Do you want to save changes in the net?')
         if button == QMessageBox.StandardButton.Yes:
@@ -40,19 +43,23 @@ class AppSupervisor(QObject):
 
     @pyqtSlot()
     def receiveCreateNewAction(self):
+        if self._active_net is not None:
+            self.receiveQuit()
+            self._ui.graphview.clear()
+
         self._ui.graphview.initNet()
         self._solver.setNet(self._ui.graphview.electric_net)
         self._active_net = self._ui.graphview.electric_net
         self._ui.graphview.initView()
         self._ui.graphview._addInput()
 
-        self._ui.actionCreateNew.setDisabled(True)
         self._ui.actionSaveAs.setEnabled(True)
 
     @pyqtSlot()
     def receiveLoadFromAction(self):
         if self._active_net is not None:
             self.receiveQuit()
+            self._ui.graphview.clear()
 
         file_url_tuple = QFileDialog.getOpenFileUrl(self._main_window,
                                                     caption="Open Electric Net", filter="Electric Net (*.ens)")
@@ -63,15 +70,23 @@ class AppSupervisor(QObject):
         self._active_net = net
         self._ui.graphview.setNet(net)
 
-        self._ui.actionCreateNew.setDisabled(True)
         self._ui.actionSaveAs.setEnabled(True)
 
 
+class MainWindow(QMainWindow):
+    def __init__(self, ui: Ui_MainWindow):
+        super().__init__()
+        self._ui = ui
+        self._ui.setupUi(self)
+
+    def resizeEvent(self, a0: typing.Optional[QtGui.QResizeEvent]) -> None:
+        new_size = self.size()
+        self._ui.graphview.resize(new_size)
+
 def main():
     app = QApplication(sys.argv)
-    window = QMainWindow()
     ui = Ui_MainWindow()
-    ui.setupUi(window)
+    window = MainWindow(ui)
 
     net_view = ui.graphview
     solver = Solver()
