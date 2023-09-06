@@ -45,11 +45,11 @@ class NetView(GraphView):
     def _placeSubtree(self, subroot: Forest.ForestNode, parent_graph_node: GraphNode | None = None):
         subroot_data: ElectricNode = subroot.content
         if subroot_data.type == ElectricNodeType.INPUT:
-            graph_node = self._addInput()
+            graph_node = self.placeInput(subroot)
         elif subroot_data.type == ElectricNodeType.CONVERTER:
-            graph_node = self._addConverter(parent_graph_node, subroot.parent)
+            graph_node = self.placeConverter(subroot, parent_graph_node)
         else:
-            graph_node = self._addLoad(parent_graph_node, subroot.parent)
+            graph_node = self.placeLoad(subroot, parent_graph_node)
 
         for child_item in graph_node.childItems():
             if isinstance(child_item, QGraphicsProxyWidget):
@@ -60,24 +60,62 @@ class NetView(GraphView):
                     if isinstance(widget, ConverterWidget):
                         if subroot.content.converter_type == ConverterType.SWITCHING:
                             widget.ui.switchingRadioButton.setEnabled(True)
-                            widget.ui.linearRadioButton.setEnabled(False)
                         else:
-                            widget.ui.switchingRadioButton.setEnabled(False)
                             widget.ui.linearRadioButton.setEnabled(True)
                 else:
                     if subroot.content.consumer_type == ConsumerType.CONSTANT_CURRENT:
                         widget.ui.currentRadioButton.setEnabled(True)
-                        widget.ui.resistiveRadioButton.setDisabled(True)
                     else:
-                        widget.ui.currentRadioButton.setDisabled(True)
                         widget.ui.resistiveRadioButton.setEnabled(True)
 
         # TODO: Neet to eliminate term 'input'
         for sink in self._electric_net.get_sinks(subroot):
             self._placeSubtree(sink, graph_node)
 
+    def placeInput(self, node: Forest.ForestNode) -> GraphNode:
+        widget, ui_form = NetView._prepareSourceWidget()
+        side_widgets = NetView._prepareSourceSideWidgets()
+        input = self.addRoot(widget, side_widgets)
+        widget.electric_node = node
+
+        input.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.converterAdded.connect(self._addConverter)
+        widget.loadAdded.connect(self._addLoad)
+        ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
+        ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+
+        return input
+
+    def placeConverter(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
+        widget, ui_form = NetView._prepareConverterWidget()
+        side_widgets = NetView._prepareSourceSideWidgets()
+        converter = self.addChild(source, widget, side_widgets)
+        widget.electric_node = node
+
+        converter.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.converterAdded.connect(self._addConverter)
+        widget.loadAdded.connect(self._addLoad)
+        ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
+        ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.linearRadioButton.toggled.connect(widget.changeType)
+        ui_form.linearRadioButton.toggled.connect(self.contentChanged)
+
+        return converter
+
+    def placeLoad(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
+        widget, ui_form = NetView._prepareLoadWidget()
+        load = self.addChild(source, widget)
+        widget.electric_node = node
+
+        ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
+        ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.currentRadioButton.toggled.connect(widget.changeType)
+        ui_form.currentRadioButton.toggled.connect(self.contentChanged)
+
+        return load
+
     @pyqtSlot()
-    def _addInput(self) -> GraphNode:
+    def _addInput(self):
         widget, ui_form = NetView._prepareSourceWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
         input = self.addRoot(widget, side_widgets)
@@ -92,10 +130,9 @@ class NetView(GraphView):
 
         # TODO: Do using decorators
         self.contentChanged.emit()
-        return input
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
-    def _addConverter(self, source: GraphNode, parent: Forest.ForestNode) -> GraphNode:
+    def _addConverter(self, source: GraphNode, parent: Forest.ForestNode):
         widget, ui_form = NetView._prepareConverterWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
         converter = self.addChild(source, widget, side_widgets)
@@ -111,10 +148,9 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
         self.contentChanged.emit()
-        return converter
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
-    def _addLoad(self, source: GraphNode, parent: Forest.ForestNode) -> GraphNode:
+    def _addLoad(self, source: GraphNode, parent: Forest.ForestNode):
         widget, ui_form = NetView._prepareLoadWidget()
         load = self.addChild(source, widget)
         new_load = self._electric_net.add_load(parent)
@@ -126,7 +162,6 @@ class NetView(GraphView):
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
         self.contentChanged.emit()
-        return load
 
     # TODO: Very ugly
     @pyqtSlot()
