@@ -8,7 +8,8 @@ from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 
-MultilinePort = namedtuple('MultilinePort', 'multiline portNumber') # Port numbers start from 1
+NodePortToParent = namedtuple('NodePortToParent', 'multiline portNumber') # Port numbers start from 1
+MultilinePort = namedtuple('MultilinePort', 'line node')
 
 
 class GraphNode(QGraphicsObject):
@@ -209,23 +210,25 @@ class ConnectionMultiline():
 
         super().__init__()
         self._scene: QGraphicsScene = parent.scene()
-        self._children_lines = []
+        self._children_ports = []
         self._parent_line = None
         self._branch_line = None
 
+        # TODO: Try to implement lines indexing via an iterable data structure of 'dense set' with random access
+        #       based on bindary search
         parent.childrenLine = self
-        child.parentPort = MultilinePort(multiline=self, portNumber=1)
+        child.parentPort = NodePortToParent(multiline=self, portNumber=1)
 
         parent_connection_point = parent.calcConnectionPointForParent()
         branch_point = QPointF(parent_connection_point.x() + ConnectionMultiline.BRANCH_INDENT,
                                parent_connection_point.y())
         child_connection_point = child.calcConnectionPointForChild()
         self._parent_line = self._drawLine(parent_connection_point, branch_point)
-        self._addChildLine(parent_connection_point, child_connection_point)
+        self._addChildLine(parent_connection_point, child_connection_point, child)
 
     def addChild(self, child: GraphNode):
         children_number = self._getChildrenNumber()
-        child.parentPort = MultilinePort(multiline=self, portNumber=children_number+1)
+        child.parentPort = NodePortToParent(multiline=self, portNumber=children_number + 1)
 
         top_branch_point = self._parent_line.line().p2()
         bottom_branch_point = QPointF(top_branch_point.x(), child.calcConnectionPointForChild().y())
@@ -237,10 +240,15 @@ class ConnectionMultiline():
             branch_qlinef.setP2(bottom_branch_point)
             self._branch_line.setLine(branch_qlinef)
 
-        self._addChildLine(bottom_branch_point, child.calcConnectionPointForChild())
+        self._addChildLine(bottom_branch_point, child.calcConnectionPointForChild(), child)
 
     def deleteChild(self, portNumber): # Port numbers starts from 1
         pass
+        # child_line = self._children_ports[portNumber-1]
+        # self._scene.removeItem(child_line)
+        # self._children_ports.pop(portNumber - 1)
+        # for line in self._children_ports[portNumber - 1]:
+        #     pass
 
     # TODO: Annotate all complex types
     def stretchBelow(self, portNumber, delta_y):
@@ -251,15 +259,16 @@ class ConnectionMultiline():
         branch_qlinef.setP2(QPointF(branch_qlinef.p2().x(), branch_qlinef.p2().y() + delta_y))
         self._branch_line.setLine(branch_qlinef)
 
-        for child_line in self._children_lines[portNumber-1:]:
-            child_line_p1 = child_line.line().p1()
-            child_line_p2 = child_line.line().p2()
-            child_line.setLine(child_line_p1.x(), child_line_p1.y() + delta_y,
-                               child_line_p2.x(), child_line_p2.y() + delta_y)
+        for port in self._children_ports[portNumber-1:]:
+            child_line_p1 = port.line.line().p1()
+            child_line_p2 = port.line.line().p2()
+            port.line.setLine(child_line_p1.x(), child_line_p1.y() + delta_y,
+                              child_line_p2.x(), child_line_p2.y() + delta_y)
 
+    # TODO: Replace with simple moveBy method
     def callForAllLines(self, method_name: str, *args):
-        for line in self._children_lines:
-            method = getattr(line, method_name)
+        for port in self._children_ports:
+            method = getattr(port.line, method_name)
             method(*args)
 
         method = getattr(self._parent_line, method_name)
@@ -270,9 +279,10 @@ class ConnectionMultiline():
             method(*args)
 
     # Private part
-    def _addChildLine(self, point1: QPointF, point2: QPointF):
+    def _addChildLine(self, point1: QPointF, point2: QPointF, child: GraphNode):
         line = self._drawLine(point1, point2)
-        self._children_lines.append(line)
+        port_number = len(self._children_ports)
+        self._children_ports.append(MultilinePort(line, child))
 
     def _drawLine(self, point1: QPointF, point2: QPointF) -> QGraphicsLineItem:
         line = QGraphicsLineItem(point1.x(), point1.y(), point2.x(), point2.y())
@@ -282,5 +292,5 @@ class ConnectionMultiline():
         return line
 
     def _getChildrenNumber(self):
-        children_number = len(self._children_lines)
+        children_number = len(self._children_ports)
         return children_number
