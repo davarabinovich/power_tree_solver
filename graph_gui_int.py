@@ -208,6 +208,7 @@ class ConnectionMultiline():
             raise ConnectionMultiline.NotAlignedPartners
 
         super().__init__()
+        self._scene: QGraphicsScene = parent.scene()
         self._children_lines = []
         self._parent_line = None
         self._branch_line = None
@@ -261,26 +262,23 @@ class ConnectionMultiline():
             method = getattr(line, method_name)
             method(*args)
 
-    def getNewLines(self) -> list[QGraphicsLineItem]:
-        children_number = self._getChildrenNumber()
-        if children_number == 1:
-            return [self._children_lines[0]]
-        elif children_number == 2:
-            return [self._children_lines[1], self._children_lines[2]]
-        else:
-            return [self._children_lines[-1]]
+        method = getattr(self._parent_line, method_name)
+        method(*args)
 
+        if self._branch_line is not None:
+            method = getattr(self._branch_line, method_name)
+            method(*args)
 
     # Private part
     def _addChildLine(self, point1: QPointF, point2: QPointF):
         line = self._drawLine(point1, point2)
         self._children_lines.append(line)
 
-    @staticmethod
-    def _drawLine(point1: QPointF, point2: QPointF) -> QGraphicsLineItem:
+    def _drawLine(self, point1: QPointF, point2: QPointF) -> QGraphicsLineItem:
         line = QGraphicsLineItem(point1.x(), point1.y(), point2.x(), point2.y())
         pen = QPen(ConnectionMultiline.LINE_COLOR, ConnectionMultiline.LINE_THICKNESS)
         line.setPen(pen)
+        self._scene.addItem(line)
         return line
 
     def _getChildrenNumber(self):

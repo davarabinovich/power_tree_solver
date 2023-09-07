@@ -118,11 +118,9 @@ class GraphView(QGraphicsView):
 
     def _drawConnection(self, parent: GraphNode, child: GraphNode):
         if parent.childrenLine is None:
-            multiline = ConnectionMultiline(parent, child)
+            ConnectionMultiline(parent, child)
         else:
-            multiline = parent.childrenLine
             parent.childrenLine.addChild(child)
-        self._addNewConnectionLinesToScene(multiline)
 
     def _moveNodesBelow(self, node: Node):
         node_forest_root = self._forest.find_root(node)
@@ -151,12 +149,6 @@ class GraphView(QGraphicsView):
             graph_subroot.childrenLine.callForAllLines("moveBy", 0, GraphView.VERTICAL_STEP)
         for successor in subroot.successors:
             self._moveSubtreeBelow(successor)
-
-    def _addNewConnectionLinesToScene(self, multiline: ConnectionMultiline):
-        new_lines = multiline.getNewLines()
-        for line in new_lines:
-            self._scene.addItem(line)
-
 
     def _calcNewRootPosition(self) -> QPointF:
         x = GraphView.HORIZONTAL_GAP
