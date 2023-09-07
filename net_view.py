@@ -171,7 +171,7 @@ class NetView(GraphView):
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _deleteNode(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
-        self.deleteNode(graph_node)
+        self.deleteLeaf(graph_node)
         self._electric_net.delete_load(forest_node)
         self.contentChanged.emit()
 

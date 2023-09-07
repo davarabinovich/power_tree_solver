@@ -275,9 +275,13 @@ class ConnectionMultiline():
         if portNumber < 2:
             return
 
-        branch_qlinef = self._branch_line.line()
-        branch_qlinef.setP2(QPointF(branch_qlinef.p2().x(), branch_qlinef.p2().y() + delta_y))
-        self._branch_line.setLine(branch_qlinef)
+        if portNumber == 2:
+            self._scene.removeItem(self._branch_line)
+            self._branch_line = None
+        else:
+            branch_qlinef = self._branch_line.line()
+            branch_qlinef.setP2(QPointF(branch_qlinef.p2().x(), branch_qlinef.p2().y() + delta_y))
+            self._branch_line.setLine(branch_qlinef)
 
         for port in self._children_ports[portNumber-1:]:
             child_line_p1 = port.line.line().p1()
@@ -301,7 +305,6 @@ class ConnectionMultiline():
     # Private part
     def _addChildLine(self, point1: QPointF, point2: QPointF, child: GraphNode):
         line = self._drawLine(point1, point2)
-        port_number = len(self._children_ports)
         self._children_ports.append(MultilinePort(line, child))
 
     def _drawLine(self, point1: QPointF, point2: QPointF) -> QGraphicsLineItem:

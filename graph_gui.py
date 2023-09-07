@@ -64,9 +64,10 @@ class GraphView(QGraphicsView):
 
         return child
 
-    def deleteNode(self, graph_node: GraphNode):
+    def deleteLeaf(self, graph_node: GraphNode):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
-        self._moveNodesAbove(forest_node)
+        if len(forest_node.parent.successors) > 1:
+            self._moveNodesAbove(forest_node)
         graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
         if forest_node.is_leaf():
             self._forest.delete_leaf(forest_node)
@@ -138,9 +139,12 @@ class GraphView(QGraphicsView):
                 ancestor_parent_multiline.stretch(top_moving_port, GraphView.VERTICAL_STEP)
 
     def _moveNodesAbove(self, node: Node):
-        siblings = self._forest.get_siblings_from(node)
+        siblings = self._forest.get_siblings_from(node)[1:]
         for sibling in siblings:
             self._moveSubtreeAbove(sibling)
+        if len(siblings) > 0:
+            parent_multiline = node.content.parentPort.multiline
+            parent_multiline.stretch(siblings[0].content.parentPort.portNumber, -GraphView.VERTICAL_STEP)
 
         ancestors = self._forest.get_path_to_root(node)
         for ancestor in ancestors:
