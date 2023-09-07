@@ -66,11 +66,8 @@ class GraphView(QGraphicsView):
 
     def deleteNode(self, graph_node: GraphNode):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
-
-        # Delete line
+        self._moveNodesAbove(forest_node)
         graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
-
-
         if forest_node.is_leaf():
             self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
@@ -138,7 +135,29 @@ class GraphView(QGraphicsView):
             if len(ancestor_younger_siblings) > 0:
                 top_moving_port = ancestor_younger_siblings[0].content.parentPort.portNumber
                 ancestor_parent_multiline = ancestor.content.parentPort.multiline
-                ancestor_parent_multiline.stretchBelow(top_moving_port, GraphView.VERTICAL_STEP)
+                ancestor_parent_multiline.stretch(top_moving_port, GraphView.VERTICAL_STEP)
+
+    def _moveNodesAbove(self, node: Node):
+        siblings = self._forest.get_siblings_from(node)
+        for sibling in siblings:
+            self._moveSubtreeAbove(sibling)
+
+        ancestors = self._forest.get_path_to_root(node)
+        for ancestor in ancestors:
+            ancestor_index = ancestor.index_by_parent()
+            ancestor_younger_siblings = ancestor.parent.successors[ancestor_index+1:]
+            for ancestor_sibling in ancestor_younger_siblings:
+                self._moveSubtreeAbove(ancestor_sibling)
+
+            if len(ancestor_younger_siblings) > 0:
+                top_moving_port = ancestor_younger_siblings[0].content.parentPort.portNumber
+                ancestor_parent_multiline = ancestor.content.parentPort.multiline
+                ancestor_parent_multiline.stretch(top_moving_port, -GraphView.VERTICAL_STEP)
+
+        node_forest_root = self._forest.find_root(node)
+        root_index = self._forest.roots.index(node_forest_root)
+        for root in self._forest.roots[root_index+1:]:
+            self._moveSubtreeAbove(root)
 
     # TODO: Implement via ConnectionMultiline
     # TODO: Implement everywhere via moveBelowBy(step)
@@ -149,6 +168,14 @@ class GraphView(QGraphicsView):
             graph_subroot.childrenLine.callForAllLines("moveBy", 0, GraphView.VERTICAL_STEP)
         for successor in subroot.successors:
             self._moveSubtreeBelow(successor)
+
+    def _moveSubtreeAbove(self, subroot: Node):
+        graph_subroot = subroot.content
+        graph_subroot.moveBy(0, -GraphView.VERTICAL_STEP)
+        if subroot.is_parent():
+            graph_subroot.childrenLine.callForAllLines("moveBy", 0, -GraphView.VERTICAL_STEP)
+        for successor in subroot.successors:
+            self._moveSubtreeAbove(successor)
 
     def _calcNewRootPosition(self) -> QPointF:
         x = GraphView.HORIZONTAL_GAP

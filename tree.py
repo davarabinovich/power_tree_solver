@@ -433,14 +433,14 @@ class Forest:
 
 
     # TODO: Transfer to Node (with find_farest_leaf)
-    def find_root(self, node: Node):
+    def find_root(self, node: Node) -> Node:
         self._validate_nodes(node)
         root_candidate = node.parent
         while root_candidate.is_successor():
             root_candidate = root_candidate.parent
         return root_candidate
 
-    def find_furthest_leaf(self, node: Node):
+    def find_furthest_leaf(self, node: Node) -> Node:
         self._validate_nodes(node)
         if node.is_leaf():
             return node
@@ -450,7 +450,14 @@ class Forest:
             leaf_candidate = leaf_candidate.successors[-1]
         return leaf_candidate
 
-    def get_path_to_root(self, node: Node, is_root_needed=False, is_itself_needed=False) -> list:
+    def get_siblings_from(self, node: Node) -> list[Node]:
+        self._validate_nodes(node)
+        parent = node.parent
+        node_index = parent.successors.index(node)
+        siblings = parent.successors[node_index:]
+        return siblings
+
+    def get_path_to_root(self, node: Node, is_root_needed=False, is_itself_needed=False) -> list[Node]:
         self._validate_nodes(node)
 
         path = []

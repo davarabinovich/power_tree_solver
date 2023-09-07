@@ -1,6 +1,6 @@
 
 from __future__ import annotations
-from collections import namedtuple
+from recordclass import recordclass
 from math import *
 
 from PyQt6.QtWidgets import *
@@ -8,8 +8,8 @@ from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 
-NodePortToParent = namedtuple('NodePortToParent', 'multiline portNumber') # Port numbers start from 1
-MultilinePort = namedtuple('MultilinePort', 'line node')
+NodePortToParent = recordclass('NodePortToParent', 'multiline portNumber') # Port numbers start from 1
+MultilinePort = recordclass('MultilinePort', 'line node')
 
 
 class GraphNode(QGraphicsObject):
@@ -210,6 +210,7 @@ class ConnectionMultiline():
 
         super().__init__()
         self._scene: QGraphicsScene = parent.scene()
+        self._parent = parent # TODO: Use it, if it will be saved after refactoring
         self._children_ports = []
         self._parent_line = None
         self._branch_line = None
@@ -225,6 +226,9 @@ class ConnectionMultiline():
         child_connection_point = child.calcConnectionPointForChild()
         self._parent_line = self._drawLine(parent_connection_point, branch_point)
         self._addChildLine(parent_connection_point, child_connection_point, child)
+
+    def __del__(self):
+        print("deleted")
 
     def addChild(self, child: GraphNode):
         children_number = self._getChildrenNumber()
@@ -242,16 +246,32 @@ class ConnectionMultiline():
 
         self._addChildLine(bottom_branch_point, child.calcConnectionPointForChild(), child)
 
-    def deleteChild(self, portNumber): # Port numbers starts from 1
-        pass
-        # child_line = self._children_ports[portNumber-1]
-        # self._scene.removeItem(child_line)
-        # self._children_ports.pop(portNumber - 1)
-        # for line in self._children_ports[portNumber - 1]:
-        #     pass
+    def deleteChild(self, port_number): # Port numbers starts from 1
+        initial_children_number = self._getChildrenNumber()
+
+        child_line = self._children_ports[port_number-1].line
+        self._scene.removeItem(child_line)
+
+        self._children_ports.pop(port_number-1)
+        for port in self._children_ports[port_number-1:]:
+            child = port.node
+            child.parentPort.portNumber = child.parentPort.portNumber - 1
+
+        if port_number == initial_children_number:
+            if initial_children_number > 2:
+                last_child_line_start = self._children_ports[-1].line.line().p1()
+                branch_qlinef = self._branch_line.line()
+                branch_qlinef.setP2(last_child_line_start)
+                self._branch_line.setLine(branch_qlinef)
+            elif initial_children_number == 2:
+                self._scene.removeItem(self._branch_line)
+            else:
+                self._scene.removeItem(self._parent_line)
+                self._parent.childrenLine = None
+
 
     # TODO: Annotate all complex types
-    def stretchBelow(self, portNumber, delta_y):
+    def stretch(self, portNumber, delta_y):
         if portNumber < 2:
             return
 
