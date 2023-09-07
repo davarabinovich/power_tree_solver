@@ -4,6 +4,7 @@
 #     - manual control of scene rect
 #     - use different view updating policy (method, see GraphicsView reference, BSP tree)
 
+from enum import Enum
 from settings import *
 from tree import *
 from graph_gui_int import *
@@ -20,6 +21,9 @@ class GraphView(QGraphicsView):
 
     LINE_COLOR = QColorConstants.Red
     LINE_THICKNESS = 3
+
+
+    class DeletingParentAsLeaf(Exception): pass
 
 
     def __init__(self, parent: QWidget=None):
@@ -66,12 +70,26 @@ class GraphView(QGraphicsView):
 
     def deleteLeaf(self, graph_node: GraphNode):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
+        if forest_node.is_parent():
+            raise GraphView.DeletingParentAsLeaf
+
         if len(forest_node.parent.successors) > 1:
             self._moveNodesAbove(forest_node)
         graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
-        if forest_node.is_leaf():
-            self._forest.delete_leaf(forest_node)
+        self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
+
+    def deleteParent(self, graph_node: GraphNode, new_parent: Forest.ForestNode=None):
+        forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
+
+        if new_parent is None:
+            furthest_leaf, distance = self._forest.find_furthest_leaf_with_distance(forest_node)
+            for i in range(distance):
+                self._moveNodesAbove(furthest_leaf)
+            self._removeSubtree(forest_node)
+            self._forest.delete_subtree(forest_node)
+        else:
+
 
     def reset(self):
         self._scene.clear()
@@ -180,6 +198,13 @@ class GraphView(QGraphicsView):
             graph_subroot.childrenLine.callForAllLines("moveBy", 0, -GraphView.VERTICAL_STEP)
         for successor in subroot.successors:
             self._moveSubtreeAbove(successor)
+
+    def _removeSubtree(self, subroot: Forest.ForestNode):
+        graph_node = subroot.content
+        graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
+        self._scene.removeItem(graph_node)
+        for child in subroot.successors:
+            self._removeSubtree(child)
 
     def _calcNewRootPosition(self) -> QPointF:
         x = GraphView.HORIZONTAL_GAP

@@ -23,7 +23,7 @@ class AppSupervisor(QObject):
     @pyqtSlot()
     def receiveSaveAsAction(self):
         file_url_tuple = QFileDialog.getSaveFileUrl(self._main_window,
-                                                          caption="Save Electric Net", filter="Electric Net (*.ens)")
+                                                    caption="Save Electric Net", filter="Electric Net (*.ens)")
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         self.needToSaveActiveNet.emit(self._active_net, file_path)
 
@@ -36,9 +36,9 @@ class AppSupervisor(QObject):
         if self._active_net is None:
             return
 
-        button = QMessageBox.question(self._main_window,
+        pressed_button = QMessageBox.question(self._main_window,
                                       'The net was probably changed', 'Do you want to save changes in the net?')
-        if button == QMessageBox.StandardButton.Yes:
+        if pressed_button == QMessageBox.StandardButton.Yes:
             self.receiveSaveAsAction()
 
     @pyqtSlot()

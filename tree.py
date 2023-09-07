@@ -450,6 +450,18 @@ class Forest:
             leaf_candidate = leaf_candidate.successors[-1]
         return leaf_candidate
 
+    def find_furthest_leaf_with_distance(self, node: Node) -> tuple[Node, int]:
+        self._validate_nodes(node)
+        if node.is_leaf():
+            return node, 0
+
+        leaf_candidate = node.successors[-1]
+        distance = len(node.successors) - 1
+        while leaf_candidate.is_parent():
+            distance += len(leaf_candidate.successors) - 1
+            leaf_candidate = leaf_candidate.successors[-1]
+        return leaf_candidate, distance
+
     def get_siblings_from(self, node: Node) -> list[Node]:
         self._validate_nodes(node)
         parent = node.parent

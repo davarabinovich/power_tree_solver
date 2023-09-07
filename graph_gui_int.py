@@ -29,7 +29,7 @@ class GraphNode(QGraphicsObject):
     WIDGET_HORIZONTAL_GAP = 5
     WIDGET_STEP = 90
 
-    def __init__(self, widget: QWidget=None, side_widgets: list[PlusIcon]=None):
+    def __init__(self, widget: QWidget=None, side_widgets: list[SideWidget]=None):
         super().__init__(None)
         self.parentPort = None
         self.childrenLine = None
@@ -97,12 +97,13 @@ class GraphNode(QGraphicsObject):
 
     @staticmethod
     def _calcSideWidgetsCoords(side_widgets_num):
-        coords = []
-        for index in range(side_widgets_num):
-            coord = QPointF(GraphNode.WIDTH + GraphNode.WIDGET_HORIZONTAL_GAP,
-                            GraphNode.WIDGET_VERTICAL_GAP + index * GraphNode.WIDGET_STEP)
-            coords.append(coord)
-        return coords
+        side_widget_x = GraphNode.WIDTH + GraphNode.WIDGET_HORIZONTAL_GAP
+        first_coord = QPointF(side_widget_x, 0)
+        second_coord = QPointF(side_widget_x, GraphNode.HEIGHT / 2 + SideWidget.DIAMETER)
+        third_coord = QPointF(side_widget_x, GraphNode.HEIGHT - SideWidget.DIAMETER)
+
+        coords = [first_coord, second_coord, third_coord]
+        return coords[:side_widgets_num]
 
 
 class SideWidget(QGraphicsWidget):
@@ -226,9 +227,6 @@ class ConnectionMultiline():
         child_connection_point = child.calcConnectionPointForChild()
         self._parent_line = self._drawLine(parent_connection_point, branch_point)
         self._addChildLine(parent_connection_point, child_connection_point, child)
-
-    def __del__(self):
-        print("deleted")
 
     def addChild(self, child: GraphNode):
         children_number = self._getChildrenNumber()

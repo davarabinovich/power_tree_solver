@@ -3,8 +3,8 @@
 #       modify the net tree
 
 from __future__ import annotations
-
 from electric_net import *
+
 from graph_gui import *
 from graph_gui_int import *
 from source_node import *
@@ -79,6 +79,7 @@ class NetView(GraphView):
         widget.electric_node = node
 
         input.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
@@ -93,6 +94,7 @@ class NetView(GraphView):
         widget.electric_node = node
 
         converter.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
@@ -126,6 +128,7 @@ class NetView(GraphView):
         widget.electric_node = new_input
 
         input.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
@@ -143,6 +146,7 @@ class NetView(GraphView):
         widget.electric_node = new_converter
 
         converter.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
@@ -171,8 +175,27 @@ class NetView(GraphView):
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _deleteNode(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
-        self.deleteLeaf(graph_node)
-        self._electric_net.delete_load(forest_node)
+        if forest_node.is_leaf():
+            self.deleteLeaf(graph_node)
+        else:
+            message_box = QMessageBox(self, 'The node with successors are being deleted',
+                                      'What do you want to with successors?')
+            delete_button = message_box.addButton('Delete')
+            promote_button = message_box.addButton('Promote')
+            reconnect_button = message_box.addButton('Reconnect')
+
+            message_box.exec()
+            if message_box.clickedButton() == delete_button:
+                self.deleteParent(graph_node)
+                self._forest.delete_subtree(forest_node)
+            elif message_box.clickedButton() == promote_button:
+                self.deleteParent(graph_node, forest_node.parent)
+                self._forest.cut_node(forest_node)
+            elif message_box.clickedButton() == reconnect_button:
+                pass
+            else:
+                pass
+
         self.contentChanged.emit()
 
     # TODO: Very ugly
@@ -190,8 +213,9 @@ class NetView(GraphView):
                             widget.ui.loadValueLabel.setText(str(widget_node_data.load))
 
     _SIDE_WIDGET_KEYS = {
-        "Converter": 0,
-        "Load": 1
+        "Delete": 0,
+        "Converter": 1,
+        "Load": 2
     }
 
     @staticmethod
@@ -214,9 +238,10 @@ class NetView(GraphView):
 
     @staticmethod
     def _prepareSourceSideWidgets() -> list:
+        delete_cross = CrossIcon(label='Delete')
         add_converter_cross = PlusIcon(label="Add Converter")
         add_load_cross = PlusIcon(label="Add Load")
-        side_widgets = [add_converter_cross, add_load_cross]
+        side_widgets = [delete_cross, add_converter_cross, add_load_cross]
         return side_widgets
 
     @staticmethod
@@ -276,6 +301,7 @@ class SourceWidget(QWidget):
 
     converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
     loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
+    deleted = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='deleted')
 
     @pyqtSlot(str)
     def changeValue(self, text: str):
@@ -287,7 +313,9 @@ class SourceWidget(QWidget):
 
     @pyqtSlot('PyQt_PyObject', int)
     def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
-        if side_widget_num == NetView._SIDE_WIDGET_KEYS["Converter"]:
+        if side_widget_num == NetView._SIDE_WIDGET_KEYS["Delete"]:
+            self.deleted.emit(source, self._electric_node)
+        elif side_widget_num == NetView._SIDE_WIDGET_KEYS["Converter"]:
             self.converterAdded.emit(source, self._electric_node)
         else:
             self.loadAdded.emit(source, self._electric_node)
@@ -313,6 +341,7 @@ class ConverterWidget(QWidget):
 
     converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
     loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
+    deleted = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='deleted')
 
     @pyqtSlot(str)
     def changeValue(self, text: str):
@@ -331,17 +360,15 @@ class ConverterWidget(QWidget):
 
     @pyqtSlot('PyQt_PyObject', int)
     def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
-        if side_widget_num == NetView._SIDE_WIDGET_KEYS["Converter"]:
+        if side_widget_num == NetView._SIDE_WIDGET_KEYS["Delete"]:
+            self.deleted.emit(source, self._electric_node)
+        elif side_widget_num == NetView._SIDE_WIDGET_KEYS["Converter"]:
             self.converterAdded.emit(source, self._electric_node)
         else:
             self.loadAdded.emit(source, self._electric_node)
 
 
 class LoadWidget(QWidget):
-    _SIDE_WIDGET_KEYS = {
-        "Delete": 0
-    }
-
     _TYPE_BUTTON_IDS = {
         "Constant Current": 1,
         "Resistive": 2
@@ -380,5 +407,5 @@ class LoadWidget(QWidget):
 
     @pyqtSlot('PyQt_PyObject', int)
     def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
-        if side_widget_num == LoadWidget._SIDE_WIDGET_KEYS["Delete"]:
+        if side_widget_num == NetView._SIDE_WIDGET_KEYS["Delete"]:
             self.deleted.emit(source, self._electric_node)
