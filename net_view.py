@@ -178,19 +178,20 @@ class NetView(GraphView):
         if forest_node.is_leaf():
             self.deleteLeaf(graph_node)
         else:
-            message_box = QMessageBox(self, 'The node with successors are being deleted',
-                                      'What do you want to with successors?')
-            delete_button = message_box.addButton('Delete')
-            promote_button = message_box.addButton('Promote')
-            reconnect_button = message_box.addButton('Reconnect')
+            message_box = QMessageBox(self)
+            message_box.setWindowTitle('The node with successors are being deleted')
+            message_box.setText('What do you want to with successors?')
+            delete_button = message_box.addButton('Delete', QMessageBox.ButtonRole.NoRole)
+            promote_button = message_box.addButton('Promote', QMessageBox.ButtonRole.NoRole)
+            reconnect_button = message_box.addButton('Reconnect', QMessageBox.ButtonRole.NoRole)
 
             message_box.exec()
             if message_box.clickedButton() == delete_button:
                 self.deleteParent(graph_node)
-                self._forest.delete_subtree(forest_node)
+                self._electric_net._forest.delete_subtree(forest_node)
             elif message_box.clickedButton() == promote_button:
                 self.deleteParent(graph_node, forest_node.parent)
-                self._forest.cut_node(forest_node)
+                self._electric_net._forest.cut_node(forest_node)
             elif message_box.clickedButton() == reconnect_button:
                 pass
             else:

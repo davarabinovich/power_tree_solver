@@ -8,7 +8,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 
-NodePortToParent = recordclass('NodePortToParent', 'multiline portNumber') # Port numbers start from 1
+NodePortToParent = recordclass('NodePortToParent', 'multiline portNumber')  # Port numbers start from 1
 MultilinePort = recordclass('MultilinePort', 'line node')
 
 
@@ -196,7 +196,7 @@ class CrossIcon(SideWidget):
         painter.drawLine(first_point, second_point)
 
 
-class ConnectionMultiline():
+class ConnectionMultiline:
     # Public interface
     BRANCH_INDENT = 100
 
@@ -211,13 +211,13 @@ class ConnectionMultiline():
 
         super().__init__()
         self._scene: QGraphicsScene = parent.scene()
-        self._parent = parent # TODO: Use it, if it will be saved after refactoring
+        self._parent = parent  # TODO: Use it, if it will be saved after refactoring
         self._children_ports = []
         self._parent_line = None
         self._branch_line = None
 
         # TODO: Try to implement lines indexing via an iterable data structure of 'dense set' with random access
-        #       based on bindary search
+        #       based on binary search
         parent.childrenLine = self
         child.parentPort = NodePortToParent(multiline=self, portNumber=1)
 
@@ -244,7 +244,7 @@ class ConnectionMultiline():
 
         self._addChildLine(bottom_branch_point, child.calcConnectionPointForChild(), child)
 
-    def deleteChild(self, port_number): # Port numbers starts from 1
+    def deleteChild(self, port_number):  # Port numbers starts from 1
         initial_children_number = self._getChildrenNumber()
 
         child_line = self._children_ports[port_number-1].line
@@ -267,6 +267,51 @@ class ConnectionMultiline():
                 self._scene.removeItem(self._parent_line)
                 self._parent.childrenLine = None
 
+    def insertChildren(self, portNumber):  # Port numbers starts from 1
+        parent = self._children_ports[portNumber - 1].node
+        children_ports = parent.childrenLine._children_ports
+
+        parent_child_line = self._children_ports[portNumber-1].line
+        self._scene.removeItem(parent_child_line)
+
+        parent_to_children_multiline = parent.childrenLine
+        parent_parent_line = parent_to_children_multiline._parent_line
+        self._scene.removeItem(parent_parent_line)
+
+        if parent_to_children_multiline._branch_line is not None:
+            if self._branch_line is not None:
+                parent_branch_line = parent_to_children_multiline._branch_line
+                self._scene.removeItem(parent_branch_line)
+            else:
+                branch_line_start = self._parent.calcBranchPointForParent()
+                branch_line_finish = QPointF(branch_line_start.x(),
+                                             children_ports[-1].node.calcConnectionPointForChild().y())
+                self._branch_line = self._drawLine(branch_line_start, branch_line_finish)
+        else:
+            if self._branch_line is None and len(children_ports) > 1:
+                branch_line_start = self._parent.calcBranchPointForParent()
+                branch_line_finish = QPointF(branch_line_start.x(),
+                                             children_ports[-1].node.calcConnectionPointForChild().y())
+                self._branch_line = self._drawLine(branch_line_start, branch_line_finish)
+
+        new_line_start_x = self._children_ports[0].line.p1().x()
+        new_line_finish_x = self._children_ports[0].line.p2().x()
+        for port in children_ports:
+            line = port.line
+            qlinef = line.line()
+            qlinef.setP1(new_line_start_x, qlinef.p1().y())
+            qlinef.setP2(new_line_finish_x, qlinef.p2().y())
+            line.setLine(qlinef)
+
+        self._children_ports = children_ports + self._children_ports
+
+        for port in children_ports:
+            child_parent_port = port.node.parentPort
+            child_parent_port.multiline = self
+
+        for child_index in range(len(self._children_ports)):
+            child_parent_port = self._children_ports[child_index]
+            child_parent_port.portNumber = child_index + 1
 
     # TODO: Annotate all complex types
     def stretch(self, portNumber, delta_y):

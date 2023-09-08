@@ -88,8 +88,15 @@ class GraphView(QGraphicsView):
                 self._moveNodesAbove(furthest_leaf)
             self._removeSubtree(forest_node)
             self._forest.delete_subtree(forest_node)
-        else:
+        elif new_parent == forest_node.parent:
+            children = forest_node.successors
+            for child in children:
+                self._moveSubtreeLeft(child)
+            new_multiline = new_parent.content.childrenLine
+            new_multiline.insertChildren(graph_node.parentPort.portNumber)
 
+            self._forest.cut_node(forest_node)
+            self._scene.removeItem(graph_node)
 
     def reset(self):
         self._scene.clear()
@@ -199,11 +206,19 @@ class GraphView(QGraphicsView):
         for successor in subroot.successors:
             self._moveSubtreeAbove(successor)
 
+    def _moveSubtreeLeft(self, subroot: Forest.ForestNode):
+        graph_subroot = subroot.content
+        graph_subroot.moveBy(GraphView.HORIZONTAL_STEP, 0)
+        if subroot.is_parent():
+            graph_subroot.childrenLine.callForAllLines("moveBy", GraphView.HORIZONTAL_STEP, 0)
+        for successor in subroot.successors:
+            self._moveSubtreeLeft(successor)
+
     def _removeSubtree(self, subroot: Forest.ForestNode):
         graph_node = subroot.content
         graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
         self._scene.removeItem(graph_node)
-        for child in subroot.successors:
+        for child in reversed(subroot.successors):
             self._removeSubtree(child)
 
     def _calcNewRootPosition(self) -> QPointF:
