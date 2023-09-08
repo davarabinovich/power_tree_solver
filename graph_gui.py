@@ -83,7 +83,11 @@ class GraphView(QGraphicsView):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
 
         if new_parent is None:
-            furthest_leaf, distance = self._forest.find_furthest_leaf_with_distance(forest_node)
+            furthest_leaf, subtree_width = self._forest.find_furthest_leaf_with_distance(forest_node)
+            if len(forest_node.parent.successors) == 1:
+                distance = subtree_width
+            else:
+                distance = subtree_width + 1
             for i in range(distance):
                 self._moveNodesAbove(furthest_leaf)
             self._removeSubtree(forest_node)

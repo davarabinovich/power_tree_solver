@@ -68,6 +68,7 @@ class AppSupervisor(QObject):
         net = file_loader.load_net_from_file(file_path)
         self._solver.setNet(net)
         self._active_net = net
+        self._ui.graphview.initView()
         self._ui.graphview.setNet(net)
 
         self._ui.actionSaveAs.setEnabled(True)
