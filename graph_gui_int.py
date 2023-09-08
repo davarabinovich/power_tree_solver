@@ -267,14 +267,6 @@ class ConnectionMultiline:
         children_ports = parent.childrenLine._children_ports
         parent_to_children_multiline = parent.childrenLine
 
-        # Scene objects:
-            # Child line of removed parent
-            # Branch and parent line of children multiline of removed parent
-            # Children lines
-            # Branch line
-        # Internal invariants
-        # External nodes invariants
-
         parent_child_line = self._children_ports[portNumber-1].line
         self._scene.removeItem(parent_child_line)
 
@@ -290,13 +282,13 @@ class ConnectionMultiline:
             branch_qlinef.setP2(last_child_line_start)
             self._branch_line.setLine(branch_qlinef)
 
-        new_line_start_x = self._children_ports[0].line.p1().x()
-        new_line_finish_x = self._children_ports[0].line.p2().x()
+        new_line_start_x = self._children_ports[0].line.line().p1().x()
+        new_line_finish_x = self._children_ports[0].line.line().p2().x()
         for port in children_ports:
             line = port.line
             qlinef = line.line()
-            qlinef.setP1(new_line_start_x, qlinef.p1().y())
-            qlinef.setP2(new_line_finish_x, qlinef.p2().y())
+            qlinef.setP1(QPointF(new_line_start_x, qlinef.p1().y()))
+            qlinef.setP2(QPointF(new_line_finish_x, qlinef.p2().y()))
             line.setLine(qlinef)
 
         self._children_ports = self._children_ports[:portNumber] + children_ports + self._children_ports[portNumber+1:]

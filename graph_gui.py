@@ -79,7 +79,7 @@ class GraphView(QGraphicsView):
         self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
 
-    def deleteParent(self, graph_node: GraphNode, new_parent: Forest.ForestNode=None):
+    def deleteParent(self, graph_node: GraphNode, new_parent: GraphNode=None):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
 
         if new_parent is None:
@@ -96,15 +96,18 @@ class GraphView(QGraphicsView):
             self._removeSubtree(forest_node)
             self._forest.delete_subtree(forest_node)
 
-        elif new_parent == forest_node.parent:
+        elif new_parent == forest_node.parent.content:
             children = forest_node.successors
             for child in children:
                 self._moveSubtreeLeft(child)
-            new_multiline = new_parent.content.childrenLine
+            new_multiline = new_parent.childrenLine
             new_multiline.insertChildren(graph_node.parentPort.portNumber)
 
             self._forest.cut_node(forest_node)
             self._scene.removeItem(graph_node)
+
+        else:
+            pass
 
     def reset(self):
         self._scene.clear()
@@ -216,9 +219,9 @@ class GraphView(QGraphicsView):
 
     def _moveSubtreeLeft(self, subroot: Forest.ForestNode):
         graph_subroot = subroot.content
-        graph_subroot.moveBy(GraphView.HORIZONTAL_STEP, 0)
+        graph_subroot.moveBy(-GraphView.HORIZONTAL_STEP, 0)
         if subroot.is_parent():
-            graph_subroot.childrenLine.callForAllLines("moveBy", GraphView.HORIZONTAL_STEP, 0)
+            graph_subroot.childrenLine.callForAllLines("moveBy", -GraphView.HORIZONTAL_STEP, 0)
         for successor in subroot.successors:
             self._moveSubtreeLeft(successor)
 
