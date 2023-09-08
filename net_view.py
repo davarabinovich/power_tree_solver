@@ -180,7 +180,7 @@ class NetView(GraphView):
         else:
             message_box = QMessageBox(self)
             message_box.setWindowTitle('The node with successors are being deleted')
-            message_box.setText('What do you want to with successors?')
+            message_box.setText('What do you want to do with successors?')
             delete_button = message_box.addButton('Delete', QMessageBox.ButtonRole.NoRole)
             promote_button = message_box.addButton('Promote', QMessageBox.ButtonRole.NoRole)
             reconnect_button = message_box.addButton('Reconnect', QMessageBox.ButtonRole.NoRole)

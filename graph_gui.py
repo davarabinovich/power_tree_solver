@@ -84,14 +84,18 @@ class GraphView(QGraphicsView):
 
         if new_parent is None:
             furthest_leaf, subtree_width = self._forest.find_furthest_leaf_with_distance(forest_node)
-            if len(forest_node.parent.successors) == 1:
+            if forest_node.is_root():
+                distance = subtree_width
+            elif len(forest_node.parent.successors) == 1:
                 distance = subtree_width
             else:
                 distance = subtree_width + 1
+
             for i in range(distance):
                 self._moveNodesAbove(furthest_leaf)
             self._removeSubtree(forest_node)
             self._forest.delete_subtree(forest_node)
+
         elif new_parent == forest_node.parent:
             children = forest_node.successors
             for child in children:
@@ -220,7 +224,8 @@ class GraphView(QGraphicsView):
 
     def _removeSubtree(self, subroot: Forest.ForestNode):
         graph_node = subroot.content
-        graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
+        if subroot.is_successor():
+            graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
         self._scene.removeItem(graph_node)
         for child in reversed(subroot.successors):
             self._removeSubtree(child)
