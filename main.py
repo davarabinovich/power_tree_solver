@@ -63,6 +63,9 @@ class AppSupervisor(QObject):
 
         file_url_tuple = QFileDialog.getOpenFileUrl(self._main_window,
                                                     caption="Open Electric Net", filter="Electric Net (*.ens)")
+        if file_url_tuple[0].toString() == '':
+            return
+
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         file_loader = FileLoader()
         net = file_loader.load_net_from_file(file_path)

@@ -73,9 +73,18 @@ class GraphView(QGraphicsView):
         if forest_node.is_parent():
             raise GraphView.DeletingParentAsLeaf
 
-        if len(forest_node.parent.successors) > 1:
+        if forest_node.is_root():
+            is_moving_above_needed = True
+        elif len(forest_node.parent.successors) > 1:
+            is_moving_above_needed = True
+        else:
+            is_moving_above_needed = False
+
+        if is_moving_above_needed:
             self._moveNodesAbove(forest_node)
-        graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
+
+        if forest_node.is_successor():
+            graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
         self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
 

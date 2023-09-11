@@ -15,7 +15,7 @@ MultilinePort = recordclass('MultilinePort', 'line node')
 class GraphNode(QGraphicsObject):
     # Public interface
     WIDTH = 200
-    HEIGHT = 140
+    HEIGHT = 175
     ROUNDING = 10
 
     FILLING_COLOR = QColorConstants.Black
@@ -104,6 +104,13 @@ class GraphNode(QGraphicsObject):
 
         coords = [first_coord, second_coord, third_coord]
         return coords[:side_widgets_num]
+
+    def mousePressEvent(self, event) -> None:
+        children_line = self.childrenLine
+        if children_line is None:
+            return
+        branch_line = children_line._branch_line
+        print(branch_line.line().p2().x())
 
 
 class SideWidget(QGraphicsWidget):
@@ -276,29 +283,25 @@ class ConnectionMultiline:
         parent_parent_line = parent_to_children_multiline._parent_line
         self._scene.removeItem(parent_parent_line)
 
-        if len(children_ports) == 1:
-            last_child_line_start = parent_to_children_multiline._children_ports[-1].line.line().p1()
-            branch_qlinef = self._branch_line.line()
-            branch_qlinef.setP2(last_child_line_start)
-            self._branch_line.setLine(branch_qlinef)
-
-        new_line_start_x = self._children_ports[0].line.line().p1().x()
-        new_line_finish_x = self._children_ports[0].line.line().p2().x()
+        delta_x = self._branch_line.line().p1().x() - parent_to_children_multiline._branch_line.line().p2().x()
         for port in children_ports:
             line = port.line
-            qlinef = line.line()
-            qlinef.setP1(QPointF(new_line_start_x, qlinef.p1().y()))
-            qlinef.setP2(QPointF(new_line_finish_x, qlinef.p2().y()))
-            line.setLine(qlinef)
+            line.moveBy(delta_x, 0)
 
-        self._children_ports = self._children_ports[:portNumber] + children_ports + self._children_ports[portNumber+1:]
+        if portNumber == len(self._children_ports):
+            new_bottom_point = QPointF(self._branch_line.line().p2().x(), children_ports[-1].line.line().p1().y())
+            branch_qlinef = self._branch_line.line()
+            branch_qlinef.setP2(new_bottom_point)
+            self._branch_line.setLine(branch_qlinef)
+
+        self._children_ports = self._children_ports[:portNumber-1] + children_ports + self._children_ports[portNumber:]
 
         for port in children_ports:
             child_parent_port = port.node.parentPort
             child_parent_port.multiline = self
 
         for child_index in range(portNumber-1, len(self._children_ports)):
-            child_parent_port = self._children_ports[child_index].node
+            child_parent_port = self._children_ports[child_index].node.parentPort
             child_parent_port.portNumber = child_index + 1
 
     # TODO: Annotate all complex types

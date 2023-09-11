@@ -54,6 +54,7 @@ class NetView(GraphView):
         for child_item in graph_node.childItems():
             if isinstance(child_item, QGraphicsProxyWidget):
                 widget = child_item.widget()
+                widget.ui.nameLineEdit.setText(subroot.content.name)
                 widget.ui.valueLineEdit.setText(str(subroot.content.value))
                 if not isinstance(widget, LoadWidget):
                     widget.ui.loadValueLabel.setText(str(subroot.content.load))
@@ -84,6 +85,8 @@ class NetView(GraphView):
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.nameLineEdit.textChanged.connect(widget.changeName)
+        ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
         return input
 
@@ -99,6 +102,8 @@ class NetView(GraphView):
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.nameLineEdit.textChanged.connect(widget.changeName)
+        ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.linearRadioButton.toggled.connect(widget.changeType)
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
@@ -114,6 +119,8 @@ class NetView(GraphView):
         widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.nameLineEdit.textChanged.connect(widget.changeName)
+        ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
@@ -133,6 +140,8 @@ class NetView(GraphView):
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.nameLineEdit.textChanged.connect(widget.changeName)
+        ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
         # TODO: Do using decorators
         self.contentChanged.emit()
@@ -151,6 +160,8 @@ class NetView(GraphView):
         widget.loadAdded.connect(self._addLoad)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.nameLineEdit.textChanged.connect(widget.changeName)
+        ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.linearRadioButton.toggled.connect(widget.changeType)
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
@@ -168,6 +179,8 @@ class NetView(GraphView):
         widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
+        ui_form.nameLineEdit.textChanged.connect(widget.changeName)
+        ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
@@ -175,8 +188,10 @@ class NetView(GraphView):
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _deleteNode(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
+        items = self._scene.items()
         if forest_node.is_leaf():
             self.deleteLeaf(graph_node)
+            self._electric_net._forest.delete_leaf(forest_node)
         else:
             message_box = QMessageBox(self)
             message_box.setWindowTitle('The node with successors are being deleted')
@@ -231,6 +246,7 @@ class NetView(GraphView):
         palette.setColor(QPalette.ColorRole.Base, QColorConstants.White)
         palette.setColor(QPalette.ColorRole.Text, QColorConstants.Black)
         input_ui.valueLineEdit.setPalette(palette)
+        input_ui.nameLineEdit.setPalette(palette)
 
         # TODO: app is falling, when already inputed number are fully cleared
         input_ui.valueLineEdit.setValidator(QDoubleValidator())
@@ -263,6 +279,7 @@ class NetView(GraphView):
         palette.setColor(QPalette.ColorRole.Base, QColorConstants.White)
         palette.setColor(QPalette.ColorRole.Text, QColorConstants.Black)
         converter_ui.valueLineEdit.setPalette(palette)
+        converter_ui.nameLineEdit.setPalette(palette)
 
         # TODO: app is falling, when already inputed number are fully cleared
         converter_ui.valueLineEdit.setValidator(QDoubleValidator())
@@ -281,6 +298,7 @@ class NetView(GraphView):
         palette.setColor(QPalette.ColorRole.Base, QColorConstants.White)
         palette.setColor(QPalette.ColorRole.Text, QColorConstants.Black)
         load_ui.valueLineEdit.setPalette(palette)
+        load_ui.nameLineEdit.setPalette(palette)
 
         load_ui.valueLineEdit.setValidator(QDoubleValidator())
 
@@ -303,6 +321,14 @@ class SourceWidget(QWidget):
     converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
     loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
     deleted = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='deleted')
+
+    @pyqtSlot(str)
+    def changeName(self, text: str):
+        if text != '':
+            new_value = text
+        else:
+            new_value = None
+        self._electric_node.content.name = new_value
 
     @pyqtSlot(str)
     def changeValue(self, text: str):
@@ -345,6 +371,14 @@ class ConverterWidget(QWidget):
     deleted = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='deleted')
 
     @pyqtSlot(str)
+    def changeName(self, text: str):
+        if text != '':
+            new_value = text
+        else:
+            new_value = None
+        self._electric_node.content.name = new_value
+
+    @pyqtSlot(str)
     def changeValue(self, text: str):
         if text != '':
             new_value = float(text.replace(',', '.'))
@@ -379,6 +413,14 @@ class LoadWidget(QWidget):
         super().__init__()
         self.ui = ui_form
         self._electric_node = None
+
+    @pyqtSlot(str)
+    def changeName(self, text: str):
+        if text != '':
+            new_value = text
+        else:
+            new_value = None
+        self._electric_node.content.name = new_value
 
     @property
     def electric_node(self) -> Forest.ForestNode:

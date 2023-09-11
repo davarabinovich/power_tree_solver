@@ -23,6 +23,7 @@ class ElectricNode:
     class NotConsumer(Exception): pass
 
     def __init__(self, type: ElectricNodeType):
+        self._name = ''
         self._value = 0
         self._type = type
         self._load = 0
@@ -31,6 +32,13 @@ class ElectricNode:
             self._converter_type = ConverterType.SWITCHING
         if type == ElectricNodeType.LOAD:
             self._consumer_type = ConsumerType.CONSTANT_CURRENT
+
+    @property
+    def name(self):
+        return self._name
+    @name.setter
+    def name(self, new_value):
+        self._name = new_value
 
     @property
     def value(self):

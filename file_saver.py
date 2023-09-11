@@ -22,8 +22,10 @@ class FileSaver(QObject):
         self._file.close()
 
     def _record_subtree(self, subroot: Forest.ForestNode, level=1):
-        record = 'Level {level} {node}:\n{params}\n\n'.format(level=level, node=FileSaver._extract_node_type(subroot),
-                                                              params=FileSaver._extract_node_params(subroot))
+        record = 'Level {level} {type} {name}:\n{params}\n\n'.format(level=level,
+                                                                     type=FileSaver._extract_node_type(subroot),
+                                                                     name=subroot.content.name,
+                                                                     params=FileSaver._extract_node_params(subroot))
         self._file.write(record)
         sinks = self._net.get_sinks(subroot)
         for sink in sinks:
@@ -98,6 +100,8 @@ class FileLoader(QObject):
                 level = int(tokens[1])
                 if level == 1:
                     node = self._net.create_input()
+                    if len(tokens) > 4:
+                        node.content.name = tokens[4][:-1]
                     cur_path = [node]
                 elif level < len(cur_path):
                     cur_path = cur_path[:level]
@@ -136,18 +140,26 @@ class FileLoader(QObject):
         elif type_token == 'Switching':
             node = self._net.add_converter(parent)
             node.content.converter_type = ConverterType.SWITCHING
+            if len(tokens) > 4:
+                node.content.name = tokens[4][:-1]
             return node
         elif type_token == 'Linear':
             node = self._net.add_converter(parent)
             node.content.converter_type = ConverterType.LINEAR
+            if len(tokens) > 4:
+                node.content.name = tokens[4][:-1]
             return node
         elif type_token == 'Constant':
             node = self._net.add_load(parent)
             node.content.consumer_type = ConsumerType.CONSTANT_CURRENT
+            if len(tokens) > 5:
+                node.content.name = tokens[5][:-1]
             return node
         elif type_token == 'Resistive':
             node = self._net.add_load(parent)
             node.content.consumer_type = ConsumerType.RESISTIVE
+            if len(tokens) > 4:
+                node.content.name = tokens[4][:-1]
             return node
         else:
             raise FileLoader.InvalidRecord

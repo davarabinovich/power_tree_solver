@@ -435,6 +435,9 @@ class Forest:
     # TODO: Transfer to Node (with find_farest_leaf)
     def find_root(self, node: Node) -> Node:
         self._validate_nodes(node)
+        if node.is_root():
+            return node
+
         root_candidate = node.parent
         while root_candidate.is_successor():
             root_candidate = root_candidate.parent
@@ -464,6 +467,9 @@ class Forest:
 
     def get_siblings_from(self, node: Node) -> list[Node]:
         self._validate_nodes(node)
+        if node.is_root():
+            return []
+
         parent = node.parent
         node_index = parent.successors.index(node)
         siblings = parent.successors[node_index:]

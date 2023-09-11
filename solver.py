@@ -1,6 +1,8 @@
 
 from typing import Optional
+from numpy import isclose
 from PyQt6.QtCore import *
+from settings import *
 from electric_net import *
 
 
@@ -32,7 +34,7 @@ class Solver(QObject):
         if source_data.type == ElectricNodeType.LOAD:
             raise Solver.LoadCalculationForLoad
 
-        if type(source_data.value) is not float:
+        if type(source_data.value) is not float or isclose(source_data.value, 0.0, EPSILON):
             return None
 
         load = 0
