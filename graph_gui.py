@@ -94,7 +94,7 @@ class GraphView(QGraphicsView):
         if new_parent is None:
             furthest_leaf, subtree_width = self._forest.find_furthest_leaf_with_distance(forest_node)
             if forest_node.is_root():
-                distance = subtree_width
+                distance = subtree_width + 1
             elif len(forest_node.parent.successors) == 1:
                 distance = subtree_width
             else:
