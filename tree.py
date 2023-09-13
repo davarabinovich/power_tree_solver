@@ -13,8 +13,8 @@ class Node:
 
 
     def __init__(self, content=None):
-        self._parent = None
-        self._successors = []
+        self._parent: Node | None = None
+        self._successors: list[Node] = []
         self._content = content
 
         self._cur_indices = None
@@ -362,7 +362,7 @@ class Forest:
             self._roots.remove(leaf)
         self._delete_node(leaf)
 
-    def cut_node(self, node: ForestNode):
+    def cut_node(self, node: ForestNode, is_needed_to_replace_node_with_successors=False):
         self._validate_nodes(node)
         if node.is_root():
             self._roots.remove(node)
@@ -372,11 +372,24 @@ class Forest:
             temp_node_successors.append(successor)
 
         node_parent = node.parent
-        for successor in temp_node_successors:
-            successor.connect_to(node_parent)
+        if is_needed_to_replace_node_with_successors:
+            node_index = node_parent.successors.index(node)
+            next_siblings = []
+            for sibling in reversed(node_parent.successors[node_index+1:]):
+                sibling.disconnect()
+                next_siblings.append(sibling)
+            for successor in temp_node_successors:
+                successor.connect_to(node_parent)
+            for sibling in next_siblings:
+                sibling.connect_to(node_parent)
+        else:
+            for successor in temp_node_successors:
+                successor.connect_to(node_parent)
+
         if node.is_root():
             for successor in temp_node_successors:
                 self._roots.append(successor)
+
         self._delete_node(node)
 
     def delete_subtree(self, subroot: ForestNode):

@@ -247,6 +247,25 @@ class ConnectionMultiline:
         self._branch_line.setLine(branch_qlinef)
         self._addChildLine(bottom_branch_point, child.calcConnectionPointForChild(), child)
 
+    def insertChild(self, child: GraphNode, port_number):
+        child.parentPort = NodePortToParent(multiline=self, portNumber=port_number)
+
+        top_branch_point = self._parent_line.line().p2()
+        child_connection_point = child.calcConnectionPointForChild()
+        child_branch_point = QPointF(top_branch_point.x(), child_connection_point.y())
+        self._insertChildLine(child_branch_point, child_connection_point, child, port_number)
+
+        children_number = self._getChildrenNumber()
+        if children_number == port_number:
+            bottom_branch_point = QPointF(top_branch_point.x(), child_connection_point.y())
+            branch_qlinef = self._branch_line.line()
+            branch_qlinef.setP2(bottom_branch_point)
+            self._branch_line.setLine(branch_qlinef)
+
+        for index in range(port_number-1, len(self._children_ports)):
+            child_parent_port = self._children_ports[index].node.parentPort
+            child_parent_port.portNumber = index + 1
+
     def deleteChild(self, port_number):  # Port numbers starts from 1
         initial_children_number = self._getChildrenNumber()
 
@@ -329,10 +348,20 @@ class ConnectionMultiline:
         method = getattr(self._branch_line, method_name)
         method(*args)
 
+    def __del__(self):
+        self._scene.removeItem(self._parent_line)
+        self._scene.removeItem(self._branch_line)
+        for port in self._children_ports:
+            self._scene.removeItem(port.line)
+
     # Private part
     def _addChildLine(self, point1: QPointF, point2: QPointF, child: GraphNode):
         line = self._drawLine(point1, point2)
         self._children_ports.append(MultilinePort(line, child))
+
+    def _insertChildLine(self, point1: QPointF, point2: QPointF, child: GraphNode, port_number):
+        line = self._drawLine(point1, point2)
+        self._children_ports.insert(port_number-1, MultilinePort(line, child))
 
     def _drawLine(self, point1: QPointF, point2: QPointF) -> QGraphicsLineItem:
         line = QGraphicsLineItem(point1.x(), point1.y(), point2.x(), point2.y())

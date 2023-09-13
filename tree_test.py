@@ -1145,7 +1145,7 @@ class TestForestCutNode(unittest.TestCase):
         tested_forest.cut_node(tested_node)
         self.assertTrue(is_forest_valid(tested_forest))
         self.assertEqual(proper_forest, tested_forest)
-#
+
     def test_cut_inner_node(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         proper_forest = Forest.build_forest([2, 9, 8, 5, 7, 2], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
@@ -1184,6 +1184,15 @@ class TestForestCutNode(unittest.TestCase):
             tested_forest.cut_node(tested_node)
         self.assertEqual(tested_forest, tested_forest_copy)
         self.assertEqual(alien_forest, alien_forest_copy)
+
+    def test_cut_inner_node_replacing_with_children(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest = Forest.build_forest([2, 9, 5, 7, 2, 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        tested_node = tested_forest.roots[0].successors[1]
+
+        tested_forest.cut_node(tested_node, is_needed_to_replace_node_with_successors=True)
+        self.assertTrue(is_forest_valid(tested_forest))
+        self.assertEqual(proper_forest, tested_forest)
 
 
 class TestForestDeleteSubtree(unittest.TestCase):

@@ -206,7 +206,7 @@ class NetView(GraphView):
                 self._electric_net._forest.delete_subtree(forest_node)
             elif message_box.clickedButton() == promote_button:
                 self.deleteParent(graph_node, graph_node.parentPort.multiline._parent)
-                self._electric_net._forest.cut_node(forest_node)
+                self._electric_net._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
             elif message_box.clickedButton() == reconnect_button:
                 pass
             else:

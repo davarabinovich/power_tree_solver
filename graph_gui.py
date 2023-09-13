@@ -34,6 +34,9 @@ class GraphView(QGraphicsView):
         self.setScene(self._scene)
         self._forest = Forest()
 
+        if IS_DEBUGGING:
+            self._connection_multilines: list[ConnectionMultiline] = []
+
 
     nodeSideWidgetClicked = pyqtSignal('PyQt_PyObject', int, name='nodeSideWidgetClicked')
 
@@ -49,6 +52,11 @@ class GraphView(QGraphicsView):
         root = self._createNodeOnScene(position, widget, side_widgets)
         forest_node = self._forest.create_root()
         self._linkGraphAndForestNodes(root, forest_node)
+
+        if IS_DEBUGGING:
+            print('Root addition')
+            self.report_multilines()
+
         return root
 
     # TODO: replace QGraphicsItem with GraphNode
@@ -66,6 +74,10 @@ class GraphView(QGraphicsView):
         self._linkGraphAndForestNodes(child, forest_node)
         self._drawConnection(parent, child)
 
+        if IS_DEBUGGING:
+            print('Child addition')
+            self.report_multilines()
+
         return child
 
     def deleteLeaf(self, graph_node: GraphNode):
@@ -80,6 +92,11 @@ class GraphView(QGraphicsView):
         else:
             is_moving_above_needed = False
 
+        if IS_DEBUGGING:
+            if (len(forest_node.parent.successors) == 1):
+                multiline_index = self._connection_multilines.index(graph_node.parentPort.multiline)
+                self._connection_multilines.pop(multiline_index)
+
         if is_moving_above_needed:
             self._moveNodesAbove(forest_node)
 
@@ -87,6 +104,10 @@ class GraphView(QGraphicsView):
             graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
         self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
+
+        if IS_DEBUGGING:
+            print('Leaf deletion')
+            self.report_multilines()
 
     def deleteParent(self, graph_node: GraphNode, new_parent: GraphNode=None):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
@@ -106,21 +127,53 @@ class GraphView(QGraphicsView):
             self._forest.delete_subtree(forest_node)
 
         elif new_parent == forest_node.parent.content:
+            if IS_DEBUGGING:
+                multiline_index = self._connection_multilines.index(graph_node.childrenLine)
+                self._connection_multilines.pop(multiline_index)
+
             children = forest_node.successors
             for child in children:
                 self._moveSubtreeLeft(child)
-            new_multiline = new_parent.childrenLine
-            new_multiline.insertChildren(graph_node.parentPort.portNumber)
 
-            self._forest.cut_node(forest_node)
+            graph_node.childrenLine = None
+            new_multiline = new_parent.childrenLine
+            new_multiline.deleteChild(graph_node.parentPort.portNumber)
+            for index in range(len(children)):
+                new_multiline.insertChild(children[index].content, graph_node.parentPort.portNumber+index)
+
+            self._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
             self._scene.removeItem(graph_node)
 
         else:
             pass
 
+        if IS_DEBUGGING:
+            print('Parent deletion')
+            self.report_multilines()
+
     def reset(self):
         self._scene.clear()
         self._forest = Forest()
+
+    def report_multilines(self):
+        if not IS_DEBUGGING:
+            raise Exception
+
+        # for multiline in self._connection_multilines:
+        #     parent_name = self.find_node_name(multiline._parent)
+        #     print('Multiline to children of {parent_name}:'.format(parent_name=parent_name))
+        #     for index in range(len(multiline._children_ports)):
+        #         node = multiline._children_ports[index].node
+        #         child_name = self.find_node_name(node)
+        #         print('    Child {number}: {child_name}'.format(number=index+1, child_name=child_name))
+        #     print('\n\n')
+
+    def find_node_name(self, node: GraphNode):
+        for item in node.childItems():
+            if isinstance(item, QGraphicsProxyWidget):
+                widget = item.widget()
+                name = widget.ui.nameLineEdit.text()
+                return name
 
 
     # Private interface
@@ -161,7 +214,8 @@ class GraphView(QGraphicsView):
 
     def _drawConnection(self, parent: GraphNode, child: GraphNode):
         if parent.childrenLine is None:
-            ConnectionMultiline(parent, child)
+            multiline = ConnectionMultiline(parent, child)
+            self._connection_multilines.append(multiline)
         else:
             parent.childrenLine.addChild(child)
 
@@ -235,6 +289,15 @@ class GraphView(QGraphicsView):
             self._moveSubtreeLeft(successor)
 
     def _removeSubtree(self, subroot: Forest.ForestNode):
+        if IS_DEBUGGING:
+            if subroot.is_successor():
+                if len(subroot.parent.successors) == 1:
+                    try:
+                        multiline_index = self._connection_multilines.index(subroot.content.parentPort)
+                        self._connection_multilines.pop(multiline_index)
+                    except ValueError:
+                        pass
+
         graph_node = subroot.content
         if subroot.is_successor():
             graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
