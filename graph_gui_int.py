@@ -210,6 +210,7 @@ class ConnectionMultiline:
     LINE_COLOR = QColorConstants.Red
     LINE_THICKNESS = 3
 
+    class CleaningNotEmptyConnection(Exception): pass
     class NotAlignedPartners(Exception): pass
 
     def __init__(self, parent: GraphNode, child: GraphNode):
@@ -249,11 +250,13 @@ class ConnectionMultiline:
 
     def insertChild(self, child: GraphNode, port_number):
         child.parentPort = NodePortToParent(multiline=self, portNumber=port_number)
+        items = self._scene.items()
 
         top_branch_point = self._parent_line.line().p2()
         child_connection_point = child.calcConnectionPointForChild()
         child_branch_point = QPointF(top_branch_point.x(), child_connection_point.y())
         self._insertChildLine(child_branch_point, child_connection_point, child, port_number)
+        items = self._scene.items()
 
         children_number = self._getChildrenNumber()
         if children_number == port_number:
@@ -261,10 +264,14 @@ class ConnectionMultiline:
             branch_qlinef = self._branch_line.line()
             branch_qlinef.setP2(bottom_branch_point)
             self._branch_line.setLine(branch_qlinef)
+        items = self._scene.items()
 
         for index in range(port_number-1, len(self._children_ports)):
             child_parent_port = self._children_ports[index].node.parentPort
             child_parent_port.portNumber = index + 1
+        items = self._scene.items()
+
+        return
 
     def deleteChild(self, port_number):  # Port numbers starts from 1
         initial_children_number = self._getChildrenNumber()
@@ -288,41 +295,6 @@ class ConnectionMultiline:
                 self._scene.removeItem(self._branch_line)
                 self._parent.childrenLine = None
 
-    def insertChildren(self, portNumber):  # Port numbers starts from 1
-        parent = self._children_ports[portNumber-1].node
-        children_ports = parent.childrenLine._children_ports
-        parent_to_children_multiline = parent.childrenLine
-
-        parent_child_line = self._children_ports[portNumber-1].line
-        self._scene.removeItem(parent_child_line)
-
-        parent_branch_line = parent_to_children_multiline._branch_line
-        self._scene.removeItem(parent_branch_line)
-
-        parent_parent_line = parent_to_children_multiline._parent_line
-        self._scene.removeItem(parent_parent_line)
-
-        delta_x = self._branch_line.line().p1().x() - parent_to_children_multiline._branch_line.line().p2().x()
-        for port in children_ports:
-            line = port.line
-            line.moveBy(delta_x, 0)
-
-        if portNumber == len(self._children_ports):
-            new_bottom_point = QPointF(self._branch_line.line().p2().x(), children_ports[-1].line.line().p1().y())
-            branch_qlinef = self._branch_line.line()
-            branch_qlinef.setP2(new_bottom_point)
-            self._branch_line.setLine(branch_qlinef)
-
-        self._children_ports = self._children_ports[:portNumber-1] + children_ports + self._children_ports[portNumber:]
-
-        for port in children_ports:
-            child_parent_port = port.node.parentPort
-            child_parent_port.multiline = self
-
-        for child_index in range(portNumber-1, len(self._children_ports)):
-            child_parent_port = self._children_ports[child_index].node.parentPort
-            child_parent_port.portNumber = child_index + 1
-
     # TODO: Annotate all complex types
     def stretch(self, portNumber, delta_y):
         branch_qlinef = self._branch_line.line()
@@ -337,6 +309,26 @@ class ConnectionMultiline:
                               child_line_p2.x(), child_line_p2.y() + delta_y)
 
     # TODO: Replace with simple moveBy method
+    def moveBy(self, delta_x, delta_y):
+        for port in self._children_ports:
+            child_line = port.line
+            new_child_line_p1 = QPointF(child_line.line().p1().x() + delta_x, child_line.line().p1().y() + delta_y)
+            new_child_line_p2 = QPointF(child_line.line().p2().x() + delta_x, child_line.line().p2().y() + delta_y)
+            new_line = QLineF(new_child_line_p1, new_child_line_p2)
+            child_line.setLine(new_line)
+
+        parent_line = self._parent_line
+        new_child_line_p1 = QPointF(parent_line.line().p1().x() + delta_x, parent_line.line().p1().y() + delta_y)
+        new_child_line_p2 = QPointF(parent_line.line().p2().x() + delta_x, parent_line.line().p2().y() + delta_y)
+        new_line = QLineF(new_child_line_p1, new_child_line_p2)
+        parent_line.setLine(new_line)
+
+        branch_line = self._branch_line
+        new_child_line_p1 = QPointF(branch_line.line().p1().x() + delta_x, branch_line.line().p1().y() + delta_y)
+        new_child_line_p2 = QPointF(branch_line.line().p2().x() + delta_x, branch_line.line().p2().y() + delta_y)
+        new_line = QLineF(new_child_line_p1, new_child_line_p2)
+        branch_line.setLine(new_line)
+
     def callForAllLines(self, method_name: str, *args):
         for port in self._children_ports:
             method = getattr(port.line, method_name)
@@ -348,11 +340,19 @@ class ConnectionMultiline:
         method = getattr(self._branch_line, method_name)
         method(*args)
 
-    def __del__(self):
-        self._scene.removeItem(self._parent_line)
+    def clear(self):
+        if len(self._children_ports) > 0:
+            raise ConnectionMultiline.CleaningNotEmptyConnection
+
         self._scene.removeItem(self._branch_line)
-        for port in self._children_ports:
-            self._scene.removeItem(port.line)
+        self._scene.removeItem(self._parent_line)
+        self._parent.childrenLine = None
+        self._parent = None
+
+
+
+    def __del__(self):
+        print("Multiline is deleted")
 
     # Private part
     def _addChildLine(self, point1: QPointF, point2: QPointF, child: GraphNode):
