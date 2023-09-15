@@ -135,8 +135,35 @@ class GraphView(QGraphicsView):
 
             items = self._scene.items()
             print('')
+
         else:
-            pass
+            # Ensure, that it's not closing movement
+            children = forest_node.successors
+
+            for child in children:
+                self._moveSubtreeLeft(child)
+
+            items = self._scene.items()
+            parent_multiline = new_parent.childrenLine
+            parent_multiline.deleteChild(graph_node.parentPort.portNumber)
+            items = self._scene.items()
+
+            if len(parent_multiline._children_ports) > 0:
+                for index in reversed(range(len(children))):
+                    graph_node.childrenLine.deleteChild(index + 1)
+                for index in range(len(children)):
+                    parent_multiline.insertChild(children[index].content, graph_node.parentPort.portNumber + index)
+            else:
+                for index in reversed(range(len(children))):
+                    graph_node.childrenLine.deleteChild(index + 1)
+
+                new_multiline = ConnectionMultiline(new_parent, children[0].content)
+                for child in children[1:]:
+                    new_multiline.addChild(child.content)
+
+            items = self._scene.items()
+            self._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
+            self._scene.removeItem(graph_node)
 
     def reset(self):
         self._scene.clear()

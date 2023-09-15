@@ -432,6 +432,48 @@ class Forest:
                 return False
         return True
 
+    # Returns vertical distance - positive, if the SECOND node is closer to the roots then the first one,
+    #         horizontal distance - positive, if the SECOND node is closer to older roots and nodes then the first one.
+    def calc_distance(self, first: ForestNode, second: ForestNode):
+        self._validate_nodes(first, second)
+
+        path_first_to_root = self.get_path_to_root(first, is_root_needed=True, is_itself_needed=True)
+        path_second_to_root = self.get_path_to_root(second, is_root_needed=True, is_itself_needed=True)
+        vertical_distance = len(path_first_to_root) - len(path_second_to_root)
+
+        first_root = path_first_to_root[-1]
+        second_root = path_second_to_root[-1]
+        first_root_index = self._roots.index(first_root)
+        second_root_index = self._roots.index(second_root)
+        if first_root_index == second_root_index:
+            horizontal_distance = 0
+
+        else:
+            average_roots_distance = 0
+            min_root_index = min(first_root_index, second_root_index)
+            max_root_index = max(first_root_index, second_root_index)
+            for root in self._roots[min_root_index+1: max_root_index]:
+                root_width = root.calc_subtree_width()
+                average_roots_distance += root_width
+            average_roots_distance += len(self._roots[min_root_index+1: max_root_index]) + 1
+            if first_root_index < second_root_index:
+                average_roots_distance *= -1
+
+            if second_root_index > first_root_index:
+                left_extra_distance = self.calc_left_part_tree_width(path_second_to_root)
+                right_extra_distance = self.calc_right_part_tree_width(path_first_to_root)
+            else:
+                right_extra_distance = self.calc_left_part_tree_width(path_second_to_root)
+                left_extra_distance = self.calc_right_part_tree_width(path_first_to_root)
+
+            horizontal_distance = left_extra_distance + average_roots_distance + right_extra_distance
+
+        return vertical_distance, horizontal_distance
+
+    @property
+    def roots(self):
+        return self._roots
+
 
     def calc_width(self):
         width = 0
@@ -439,11 +481,23 @@ class Forest:
             width += root.calc_subtree_width()
         return width
 
+    def calc_left_part_tree_width(self, path_to_root: list[Node]):
+        width = 0
+        for node in path_to_root[:-1]:
+            node_index = node.parent.successors.index(node)
+            for sibling in node.parent.successors[:node_index]:
+                width += sibling.calc_subtree_width()
+            width += len(node.parent.successors[:node_index]) - 1
+        return width
 
-    @property
-    def roots(self):
-        return self._roots
-
+    def calc_right_part_tree_width(self, path_to_root: list[Node]):
+        width = 0
+        for node in path_to_root[:-1]:
+            node_index = node.parent.successors.index(node)
+            for sibling in node.parent.successors[node_index:]:
+                width += sibling.calc_subtree_width()
+            width += len(node.parent.successors[:node_index]) - 1
+        return width
 
     # TODO: Transfer to Node (with find_farest_leaf)
     def find_root(self, node: Node) -> Node:
