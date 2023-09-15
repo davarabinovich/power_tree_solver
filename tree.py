@@ -445,13 +445,18 @@ class Forest:
         first_lowest_successor = first_root_path[-lowest_row_level-1]
         second_lowest_successor = first_root_path[-lowest_row_level-1]
         is_first_lower = len(first_root_path) < len(second_root_path)
-        if first_root_path[-1] == second_root_path[-1]:
-            lowest_row = first.parent.successors if is_first_lower else second.parent.successors
-            min_lowest_row_index = min(first_lowest_successor.index_by_parent(),
-                                       second_lowest_successor.index_by_parent())
-            max_lowest_row_index = max(first_lowest_successor.index_by_parent(),
-                                       second_lowest_successor.index_by_parent())
-            is_first_lefter = min_lowest_row_index == first_lowest_successor.index_by_parent()
+        if id(first_root_path[-1]) == id(second_root_path[-1]):
+            if first.is_root() or second.is_root():
+                lowest_row = self._roots
+            else:
+                lowest_row = first.parent.successors if is_first_lower else second.parent.successors
+
+            min_lowest_row_index = min(self.node_parent_index(first_lowest_successor),
+                                       self.node_parent_index(second_lowest_successor))
+            max_lowest_row_index = max(self.node_parent_index(first_lowest_successor),
+                                       self.node_parent_index(second_lowest_successor))
+            is_first_lefter = min_lowest_row_index == self.node_parent_index(first_lowest_successor)
+
         else:
             lowest_row = self._roots
             min_lowest_row_index = min(self._roots.index(first_lowest_successor),
@@ -462,20 +467,29 @@ class Forest:
 
         # Calc average part
         average_distance = 0
-        for lowest_row_node in lowest_row[min_lowest_row_index + 1: max_lowest_row_index]:
-            subtree_width = lowest_row_node.calc_subtree_width()
-            average_distance += subtree_width
-        average_distance += len(lowest_row[min_lowest_row_index + 1: max_lowest_row_index]) + 1
+        average_node_num = len(lowest_row[min_lowest_row_index + 1: max_lowest_row_index])
+        if average_node_num > 0:
+            for lowest_row_node in lowest_row[min_lowest_row_index+1: max_lowest_row_index]:
+                subtree_width = lowest_row_node.calc_subtree_width()
+                average_distance += subtree_width
+            average_distance += average_node_num + 1
 
         # Calc side parts
-        if is_first_lefter:
-            left_extra_distance = self.calc_left_part_subtree_width(first, first_lowest_successor)
-            right_extra_distance = self.calc_right_part_subtree_width(second, second_lowest_successor)
-        else:
-            right_extra_distance = self.calc_left_part_subtree_width(second, second_lowest_successor)
-            left_extra_distance = self.calc_right_part_subtree_width(first, first_lowest_successor)
+        if average_node_num > 0:
+            if is_first_lefter:
+                left_extra_distance = self.calc_left_part_subtree_width(first, first_lowest_successor)
+                right_extra_distance = self.calc_right_part_subtree_width(second, second_lowest_successor)
+            else:
+                right_extra_distance = self.calc_left_part_subtree_width(second, second_lowest_successor)
+                left_extra_distance = self.calc_right_part_subtree_width(first, first_lowest_successor)
 
-        horizontal_distance = left_extra_distance + average_distance + right_extra_distance
+            horizontal_distance = left_extra_distance + average_distance + right_extra_distance
+
+        else:
+            subroot = first if is_first_lefter else second
+            successor = second if is_first_lefter else first
+            horizontal_distance = self.calc_left_part_subtree_width(successor, subroot)
+
         if is_first_lefter:
             horizontal_distance *= -1
 
@@ -559,11 +573,18 @@ class Forest:
 
     def get_path_to_root(self, node: Node, is_root_needed=False, is_itself_needed=False) -> list[Node]:
         self._validate_nodes(node)
-
         path = []
+
+        if node.is_root():
+            if is_root_needed or is_itself_needed:
+                path.append(node)
+            return path
+
         if is_itself_needed:
             path.append(node)
-        if node.is_root() or node.parent.is_root():
+        if node.parent.is_root():
+            if is_root_needed:
+                path.append(node.parent)
             return path
 
         cur_ancestor = node.parent
@@ -573,6 +594,15 @@ class Forest:
         if is_root_needed:
             path.append(cur_ancestor)
         return path
+
+    def node_parent_index(self, node: Node):
+        self._validate_nodes(node)
+
+        if node.is_successor():
+            index = node.index_by_parent()
+        else:
+            index = self._roots.index(node)
+        return index
 
 
     # Private part
