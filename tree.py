@@ -437,36 +437,141 @@ class Forest:
     def calc_distance(self, first: ForestNode, second: ForestNode):
         self._validate_nodes(first, second)
 
-        path_first_to_root = self.get_path_to_root(first, is_root_needed=True, is_itself_needed=True)
-        path_second_to_root = self.get_path_to_root(second, is_root_needed=True, is_itself_needed=True)
-        vertical_distance = len(path_first_to_root) - len(path_second_to_root)
+        first_root_path = self.get_path_to_root(first, is_root_needed=True, is_itself_needed=True)
+        second_root_path = self.get_path_to_root(second, is_root_needed=True, is_itself_needed=True)
+        vertical_distance = len(first_root_path) - len(second_root_path)
 
-        first_root = path_first_to_root[-1]
-        second_root = path_second_to_root[-1]
+        first_root = first_root_path[-1]
+        second_root = second_root_path[-1]
         first_root_index = self._roots.index(first_root)
         second_root_index = self._roots.index(second_root)
         if first_root_index == second_root_index:
             horizontal_distance = 0
+            lower_level = min(len(first_root_path), len(second_root_path)) - 1
+            if len(first_root_path) > len(second_root_path):
+                pass
+            elif len(first_root_path) < len(second_root_path):
+                bound_sibling = second_root_path[-lower_level-1]
+                node_index = first.index_by_parent()
+                bound_sibling_index = bound_sibling.index_by_parent()
+                start_index = min(bound_sibling_index, node_index)
+                end_index = max(bound_sibling_index, node_index)
 
-        else:
-            average_roots_distance = 0
-            min_root_index = min(first_root_index, second_root_index)
-            max_root_index = max(first_root_index, second_root_index)
-            for root in self._roots[min_root_index+1: max_root_index]:
-                root_width = root.calc_subtree_width()
-                average_roots_distance += root_width
-            average_roots_distance += len(self._roots[min_root_index+1: max_root_index]) + 1
-            if first_root_index < second_root_index:
-                average_roots_distance *= -1
+                distance = 0
+                for sibling in first.parent.successors[start_index:end_index+1]:
+                    distance += sibling.calc_subtree_width()
+                distance += len(first.parent.successors[start_index:end_index+1]) - 1
+
+                # Add distance between second and bound_sibling if first is lefter
+                #
+            else:
+                pass
+
+
+            lowest_row_level = min(len(first_root_path), len(second_root_path)) - 1
+            first_lowest_successor = first_root_path[-lowest_row_level-1]
+            second_lowest_successor = first_root_path[-lowest_row_level-1]
+            is_first_lower = len(first_root_path) < len(second_root_path)
+            if first_root_path[-1] == second_root_path[-1]:
+                lowest_row = first.parent.successors if is_first_lower else second.parent.successors
+                min_lowest_row_index = min(first_lowest_successor.index_by_parent(),
+                                           second_lowest_successor.index_by_parent())
+                max_lowest_row_index = max(first_lowest_successor.index_by_parent(),
+                                           second_lowest_successor.index_by_parent())
+                is_first_lefter = min_lowest_row_index == first_lowest_successor.index_by_parent()
+            else:
+                lowest_row = self._roots
+                min_lowest_row_index = min(self._roots.index(first_lowest_successor),
+                                           self._roots.index(second_lowest_successor))
+                max_lowest_row_index = max(self._roots.index(first_lowest_successor),
+                                           self._roots.index(second_lowest_successor))
+                is_first_lefter = min_lowest_row_index == self._roots.index(first_lowest_successor)
+
+            # Calc average part
+            average_distance = 0
+            for lowest_row_node in lowest_row[min_lowest_row_index + 1: max_lowest_row_index]:
+                subtree_width = lowest_row_node.calc_subtree_width()
+                average_distance += subtree_width
+            average_distance += len(lowest_row[min_lowest_row_index + 1: max_lowest_row_index]) + 1
+
+            # Calc side parts
+            if is_first_lefter:
+                left_extra_distance = self.calc_left_part_subtree_width(first, first_lowest_successor)
+                right_extra_distance = self.calc_right_part_subtree_width(second, second_lowest_successor)
+            else:
+                right_extra_distance = self.calc_left_part_subtree_width(second, second_lowest_successor)
+                left_extra_distance = self.calc_right_part_subtree_width(first, first_lowest_successor)
+
+            horizontal_distance = left_extra_distance + average_distance + right_extra_distance
+            if is_first_lefter:
+                horizontal_distance *= -1
+
+            # average_roots_distance = 0
+            # min_root_index = min(first_root_index, second_root_index)
+            # max_root_index = max(first_root_index, second_root_index)
+            # for root in self._roots[min_root_index+1: max_root_index]:
+            #     root_width = root.calc_subtree_width()
+            #     average_roots_distance += root_width
+            # average_roots_distance += len(self._roots[min_root_index+1: max_root_index]) + 1
+            # if first_root_index < second_root_index:
+            #     average_roots_distance *= -1
+            #
+            # if second_root_index > first_root_index:
+            #     left_extra_distance = self.calc_left_part_tree_width(second_root_path)
+            #     right_extra_distance = self.calc_right_part_tree_width(first_root_path)
+            # else:
+            #     right_extra_distance = self.calc_left_part_tree_width(second_root_path)
+            #     left_extra_distance = self.calc_right_part_tree_width(first_root_path)
+            #
+
+            if len(first_root_path) < len(second_root_path):
+                lowest_row = first.parent.successors
+                bound_node_index = first.index_by_parent()
+                equal_partner_node_index = second_root_path[-lowest_row_level-1].index_by_parent()
+            else:
+                lowest_row = second.parent.successors
+                bound_node_index = second.index_by_parent()
+                equal_partner_node_index = first_root_path[-lowest_row_level-1].index_by_parent()
+
+            min_lowest_row_index = min(bound_node_index, equal_partner_node_index)
+            max_lowest_row_index = max(bound_node_index, equal_partner_node_index)
+
+            average_distance = 0
+            for lowest_row_node in lowest_row[min_lowest_row_index+1: max_lowest_row_index]:
+                subtree_width = lowest_row_node.calc_subtree_width()
+                average_distance += subtree_width
+            average_distance += len(lowest_row[min_lowest_row_index+1: max_lowest_row_index]) + 1
 
             if second_root_index > first_root_index:
-                left_extra_distance = self.calc_left_part_tree_width(path_second_to_root)
-                right_extra_distance = self.calc_right_part_tree_width(path_first_to_root)
+                left_extra_distance = self.calc_left_part_subtree_width(first, first_lowest_successor)
+                right_extra_distance = self.calc_right_part_subtree_width(second, second_lowest_successor)
             else:
-                right_extra_distance = self.calc_left_part_tree_width(path_second_to_root)
-                left_extra_distance = self.calc_right_part_tree_width(path_first_to_root)
+                right_extra_distance = self.calc_left_part_subtree_width(second, second_lowest_successor)
+                left_extra_distance = self.calc_right_part_subtree_width(first, first_lowest_successor)
 
-            horizontal_distance = left_extra_distance + average_roots_distance + right_extra_distance
+            horizontal_distance = left_extra_distance + average_distance + right_extra_distance
+
+            # Calc sign
+
+        else:
+            # average_roots_distance = 0
+            # min_root_index = min(first_root_index, second_root_index)
+            # max_root_index = max(first_root_index, second_root_index)
+            # for root in self._roots[min_root_index+1: max_root_index]:
+            #     root_width = root.calc_subtree_width()
+            #     average_roots_distance += root_width
+            # average_roots_distance += len(self._roots[min_root_index+1: max_root_index]) + 1
+            # if first_root_index < second_root_index:
+            #     average_roots_distance *= -1
+            #
+            # if second_root_index > first_root_index:
+            #     left_extra_distance = self.calc_left_part_tree_width(second_root_path)
+            #     right_extra_distance = self.calc_right_part_tree_width(first_root_path)
+            # else:
+            #     right_extra_distance = self.calc_left_part_tree_width(second_root_path)
+            #     left_extra_distance = self.calc_right_part_tree_width(first_root_path)
+            #
+            # horizontal_distance = left_extra_distance + average_roots_distance + right_extra_distance
 
         return vertical_distance, horizontal_distance
 
@@ -481,7 +586,7 @@ class Forest:
             width += root.calc_subtree_width()
         return width
 
-    def calc_left_part_tree_width(self, path_to_root: list[Node]):
+    def calc_left_part_subtree_width(self, section_node: Node, subroot: Node):
         width = 0
         for node in path_to_root[:-1]:
             node_index = node.parent.successors.index(node)
@@ -490,7 +595,7 @@ class Forest:
             width += len(node.parent.successors[:node_index]) - 1
         return width
 
-    def calc_right_part_tree_width(self, path_to_root: list[Node]):
+    def calc_right_part_subtree_width(self, section_node: Node, subroot: Node):
         width = 0
         for node in path_to_root[:-1]:
             node_index = node.parent.successors.index(node)
