@@ -191,7 +191,7 @@ class GraphView(QGraphicsView):
             delta_y = 0
         else:
             parent_width = parent_forest_node.calc_subtree_width()
-            delta_y = parent_width * GraphView.VERTICAL_STEP
+            delta_y = (parent_width + 1) * GraphView.VERTICAL_STEP
         y = parent.pos().y() + delta_y
 
         return QPointF(x, y)

@@ -132,11 +132,10 @@ class Node:
 
     def calc_subtree_width(self):
         width = 0
-        if len(self._successors) > 0:
+        if len(self.successors) > 0:
+            width += len(self.successors) - 1
             for successor in self._successors:
-                width += successor.calc_subtree_width()
-        else:
-             width = 1
+               width += successor.calc_subtree_width()
 
         return width
 
