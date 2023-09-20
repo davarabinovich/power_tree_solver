@@ -560,16 +560,22 @@ class Forest:
         return leaf_candidate, distance
 
     def find_lowest_common_row_level(self, first: Node, second: Node):
-        first_root_path = self.get_path_to_root(first)
-        second_root_path = self.get_path_to_root(second)
+        first_root_path = self.get_path_to_root(first, is_root_needed=True, is_itself_needed=True)
+        second_root_path = self.get_path_to_root(second, is_root_needed=True, is_itself_needed=True)
         cur_level = min(len(first_root_path), len(second_root_path)) - 1
-        while cur_level >= 0:
-            if first_root_path[-cur_level-1] == second_root_path[-cur_level-1]:
-                break
-            else:
-                cur_level -= 1
-
-        common_level = cur_level + 1
+        if id(first) == id(second):
+            common_level = cur_level
+        elif first.is_ancestor(second):
+            common_level = len(first_root_path) - 1
+        elif second.is_ancestor(first):
+            common_level = len(second_root_path) - 1
+        else:
+            while cur_level >= 0:
+                if first_root_path[-cur_level-1] == second_root_path[-cur_level-1]:
+                    break
+                else:
+                    cur_level -= 1
+            common_level = cur_level + 1
         return common_level
 
     def get_siblings_from(self, node: Node) -> list[Node]:

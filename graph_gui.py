@@ -146,17 +146,22 @@ class GraphView(QGraphicsView):
             delta_x, delta_y = self._forest.calc_distance(forest_node, new_parent_forest_node)
             children = forest_node.successors
 
-            top_moving_node = self._forest.get_next_sibling(new_parent_forest_node)
+            cur_ancestor = new_parent_forest_node
+            top_moving_node = self._forest.get_next_sibling(cur_ancestor)
             while top_moving_node is None:
-                top_moving_node = self._forest.get_next_sibling(new_parent_forest_node.parent)
+                cur_ancestor = cur_ancestor.parent
+                if cur_ancestor is not None:
+                    top_moving_node = self._forest.get_next_sibling(new_parent_forest_node.parent)
+                else:
+                    break
 
             for i in range(len(children)):
-                self._moveNodesBelow(GraphView.VERTICAL_STEP)
+                self._moveNodesBelow(top_moving_node, GraphView.VERTICAL_STEP)
             for child in children:
                 self._moveSubtreeLeft(child, delta_x * GraphView.HORIZONTAL_STEP)
-                self._moveSubtreeAbove(child. delta_y * GraphView.VERTICAL_STEP)
+                self._moveSubtreeBelow(child, delta_y * GraphView.VERTICAL_STEP)
 
-            parent_multiline = new_parent.childrenLine
+            parent_multiline = forest_node.parent.content.childrenLine
             parent_multiline.deleteChild(graph_node.parentPort.portNumber)
 
             if len(parent_multiline._children_ports) > 0:
@@ -224,6 +229,9 @@ class GraphView(QGraphicsView):
             parent.childrenLine.addChild(child)
 
     def _moveNodesBelow(self, node: Node, delta_y=VERTICAL_STEP):
+        if node is None:
+            return
+
         node_forest_root = self._forest.find_root(node)
         root_index = self._forest.roots.index(node_forest_root)
         for root in self._forest.roots[root_index+1:]:

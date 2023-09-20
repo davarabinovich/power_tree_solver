@@ -53,7 +53,13 @@ class NetView(GraphView):
                 raise NetView.NotSpecifiedParentForDeletion
 
             self.deleteParent(self._parent_to_be_deleted, selected_node)
-            self._electric_net._forest.move_subtree(self._parent_to_be_deleted_forest_node)
+
+            for child_item in selected_node.childItems():
+                if isinstance(child_item, QGraphicsProxyWidget):
+                    widget = child_item.widget()
+                    if isinstance(widget, SourceWidget) or isinstance(widget, ConverterWidget):
+                        selected_forest_node = widget.electric_node
+            self._electric_net._forest.move_subtree(self._parent_to_be_deleted_forest_node, selected_forest_node)
             self._electric_net._forest.cut_node(self._parent_to_be_deleted_forest_node)
 
     @property
