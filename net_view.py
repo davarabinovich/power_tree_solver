@@ -17,9 +17,18 @@ class NetView(GraphView):
     # Public interface
     CROSS_POSITION = QPointF(20, 200)
 
+
+    class NotSpecifiedParentForDeletion(Exception): pass
+    class ClosingReconnection(Exception): pass
+
+
     def __init__(self, parent: QWidget=None):
         super().__init__(parent)
         self._electric_net = None
+        self._is_waiting_for_node_selection = False
+        self._parent_to_be_deleted: GraphNode | None = None
+        self._parent_to_be_deleted_forest_node: Forest.ForestNode | None = None
+
 
     def initNet(self):
         self._electric_net = ElectricNet()
@@ -36,6 +45,16 @@ class NetView(GraphView):
         cross.clicked.connect(self._addInput)
 
     contentChanged = pyqtSignal(name='contentChanged')
+
+    @pyqtSlot('PyQt_PyObject')
+    def nodeSelected(self, selected_node: GraphNode):
+        if self._is_waiting_for_node_selection:
+            if self._parent_to_be_deleted is None:
+                raise NetView.NotSpecifiedParentForDeletion
+
+            self.deleteParent(self._parent_to_be_deleted, selected_node)
+            self._electric_net._forest.move_subtree(self._parent_to_be_deleted_forest_node)
+            self._electric_net._forest.cut_node(self._parent_to_be_deleted_forest_node)
 
     @property
     def electric_net(self):
@@ -79,6 +98,7 @@ class NetView(GraphView):
         input = self.addRoot(widget, side_widgets)
         widget.electric_node = node
 
+        input.clicked.connect(self.nodeSelected)
         input.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
@@ -96,6 +116,7 @@ class NetView(GraphView):
         converter = self.addChild(source, widget, side_widgets)
         widget.electric_node = node
 
+        converter.clicked.connect(self.nodeSelected)
         converter.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
@@ -115,6 +136,7 @@ class NetView(GraphView):
         load = self.addChild(source, widget, side_widgets)
         widget.electric_node = node
 
+        load.clicked.connect(self.nodeSelected)
         load.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
@@ -134,6 +156,7 @@ class NetView(GraphView):
         new_input = self._electric_net.create_input()
         widget.electric_node = new_input
 
+        input.clicked.connect(self.nodeSelected)
         input.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
@@ -154,6 +177,7 @@ class NetView(GraphView):
         new_converter = self._electric_net.add_converter(parent)
         widget.electric_node = new_converter
 
+        converter.clicked.connect(self.nodeSelected)
         converter.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
@@ -175,6 +199,7 @@ class NetView(GraphView):
         new_load = self._electric_net.add_load(parent)
         widget.electric_node = new_load
 
+        consumer.clicked.connect(self.nodeSelected)
         consumer.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
@@ -193,24 +218,38 @@ class NetView(GraphView):
             self.deleteLeaf(graph_node)
             self._electric_net._forest.delete_leaf(forest_node)
         else:
-            message_box = QMessageBox(self)
-            message_box.setWindowTitle('The node with successors are being deleted')
-            message_box.setText('What do you want to do with successors?')
-            delete_button = message_box.addButton('Delete', QMessageBox.ButtonRole.NoRole)
-            promote_button = message_box.addButton('Promote', QMessageBox.ButtonRole.NoRole)
-            reconnect_button = message_box.addButton('Reconnect', QMessageBox.ButtonRole.NoRole)
+            mode_selection_message_box = QMessageBox(self)
+            mode_selection_message_box.setWindowTitle('The node with successors are being deleted')
+            mode_selection_message_box.setText('What do you want to do with successors?')
+            delete_button = mode_selection_message_box.addButton('Delete', QMessageBox.ButtonRole.NoRole)
+            reconnect_button = mode_selection_message_box.addButton('Reconnect', QMessageBox.ButtonRole.NoRole)
 
-            message_box.exec()
-            if message_box.clickedButton() == delete_button:
-                self.deleteParent(graph_node)
-                self._electric_net._forest.delete_subtree(forest_node)
-            elif message_box.clickedButton() == promote_button:
-                self.deleteParent(graph_node, graph_node.parentPort.multiline._parent)
-                self._electric_net._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
-            elif message_box.clickedButton() == reconnect_button:
-                pass
+            if forest_node.is_successor():
+                promote_button = mode_selection_message_box.addButton('Promote', QMessageBox.ButtonRole.NoRole)
+                mode_selection_message_box.exec()
+                if mode_selection_message_box.clickedButton() == delete_button:
+                    self.deleteParent(graph_node)
+                    self._electric_net._forest.delete_subtree(forest_node)
+                elif mode_selection_message_box.clickedButton() == promote_button:
+                    self.deleteParent(graph_node, graph_node.parentPort.multiline._parent)
+                    self._electric_net._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
+                elif mode_selection_message_box.clickedButton() == reconnect_button:
+                    self._is_waiting_for_node_selection = True
+                    self._parent_to_be_deleted = graph_node
+                    self._parent_to_be_deleted_forest_node = forest_node
+                else:
+                    pass
             else:
-                pass
+                mode_selection_message_box.exec()
+                if mode_selection_message_box.clickedButton() == delete_button:
+                    self.deleteParent(graph_node)
+                    self._electric_net._forest.delete_subtree(forest_node)
+                elif mode_selection_message_box.clickedButton() == reconnect_button:
+                    self._is_waiting_for_node_selection = True
+                    self._parent_to_be_deleted = graph_node
+                    self._parent_to_be_deleted_forest_node = forest_node
+                else:
+                    pass
 
         self.contentChanged.emit()
 

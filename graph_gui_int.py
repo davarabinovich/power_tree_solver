@@ -32,7 +32,7 @@ class GraphNode(QGraphicsObject):
     def __init__(self, widget: QWidget=None, side_widgets: list[SideWidget]=None):
         super().__init__(None)
         self.parentPort = None
-        self.childrenLine = None
+        self.childrenLine: ConnectionMultiline | None = None
 
         proxy_widget = QGraphicsProxyWidget(self)
         proxy_widget.setWidget(widget)
@@ -68,6 +68,7 @@ class GraphNode(QGraphicsObject):
         painter.setBrush(brush)
         painter.drawRoundedRect(0, 0, GraphNode.WIDTH, GraphNode.HEIGHT, GraphNode.ROUNDING, GraphNode.ROUNDING)
 
+    clicked = pyqtSignal('PyQt_PyObject', name='clicked')
     sideWidgetClicked = pyqtSignal('PyQt_PyObject', int, name='sideWidgetClicked')
 
     # TODO: This module doesn't know about scene, but this functions invokes pos(), that assumes, that scene is set.
@@ -106,11 +107,7 @@ class GraphNode(QGraphicsObject):
         return coords[:side_widgets_num]
 
     def mousePressEvent(self, event) -> None:
-        children_line = self.childrenLine
-        if children_line is None:
-            return
-        branch_line = children_line._branch_line
-        print(branch_line.line().p2().x())
+        self.clicked.emit(self)
 
 
 class SideWidget(QGraphicsWidget):
