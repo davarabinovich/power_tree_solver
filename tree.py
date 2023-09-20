@@ -441,7 +441,7 @@ class Forest:
         second_root_path = self.get_path_to_root(second, is_root_needed=True, is_itself_needed=True)
         vertical_distance = len(first_root_path) - len(second_root_path)
 
-        lowest_row_level = self.find_lowest_common_rom_level(first, second)
+        lowest_row_level = self.find_lowest_common_row_level(first, second)
         first_lowest_successor = first_root_path[-lowest_row_level-1]
         second_lowest_successor = second_root_path[-lowest_row_level-1]
         is_first_lower = len(first_root_path) < len(second_root_path)
@@ -469,9 +469,11 @@ class Forest:
                 subtree_width = lowest_row_node.calc_subtree_width()
                 average_distance += subtree_width
             average_distance += average_node_num + 1
+        elif id(first_lowest_successor) != id(second_lowest_successor):
+            average_distance = 1
 
         # Calc side parts
-        if average_node_num > 0:
+        if not self.is_successor_of(first, second) and not self.is_successor_of(second, first):
             if is_first_more_to_the_left:
                 left_extra_distance = self.calc_right_part_subtree_width(first, first_lowest_successor)
                 right_extra_distance = self.calc_left_part_subtree_width(second, second_lowest_successor)
@@ -557,7 +559,7 @@ class Forest:
             leaf_candidate = leaf_candidate.successors[-1]
         return leaf_candidate, distance
 
-    def find_lowest_common_rom_level(self, first: Node, second: Node):
+    def find_lowest_common_row_level(self, first: Node, second: Node):
         first_root_path = self.get_path_to_root(first)
         second_root_path = self.get_path_to_root(second)
         cur_level = min(len(first_root_path), len(second_root_path)) - 1
@@ -593,6 +595,16 @@ class Forest:
         if index < len(siblings_list) - 1:
             next_sibling = siblings_list[index+1]
         return next_sibling
+
+    def is_successor_of(self, first: Node, second: Node):
+        path_to_root = self.get_path_to_root(first, is_root_needed=True, is_itself_needed=True)
+        result = False
+        for node in path_to_root:
+            if id(node) == id(second):
+                result = True
+                break
+        return result
+
 
     def get_path_to_root(self, node: Node, is_root_needed=False, is_itself_needed=False) -> list[Node]:
         self._validate_nodes(node)

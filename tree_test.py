@@ -1468,7 +1468,6 @@ class TestTree(unittest.TestCase):
         new_proper_result = (-proper_result[0], -proper_result[1])
         self.assertEqual(new_proper_result, new_result)
 
-
     def test_calc_distance_between_inner_node_and_other_roots_inner_node_from_left(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         first = tested_forest.roots[2].successors[1]
@@ -1511,22 +1510,168 @@ class TestTree(unittest.TestCase):
         new_proper_result = (-proper_result[0], -proper_result[1])
         self.assertEqual(new_proper_result, new_result)
 
-    # def test_calc_distance_between_inner_node_and_other_roots_leaf_from_right(self):
+    def test_calc_distance_between_inner_node_and_other_roots_leaf_from_right(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[0].successors[1]
+        second = tested_forest.roots[2].successors[2].successors[0]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (-1, -8)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_adjacent_roots(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[0]
+        second = tested_forest.roots[1]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (0, -5)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_root_and_adjacent_roots_inner_node_from_left(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[1]
+        second = tested_forest.roots[0].successors[1]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (-1, 4)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_root_and_adjacent_roots_inner_node_from_right(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[0]
+        second = tested_forest.roots[1].successors[1]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (-1, -6)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_root_and_adjacent_roots_leaf_from_left(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[1]
+        second = tested_forest.roots[0].successors[0]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (-1, 5)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_root_and_adjacent_roots_leaf_from_right(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[0]
+        second = tested_forest.roots[1].successors[1].successors[0]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (-2, -6)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
 
 
-    # def test_calc_distance_between_(self):
-    #     tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
-    #     first = tested_forest.roots[2].successors[]
-    #     second = tested_forest.roots[2]
-    #     result = tested_forest.calc_distance(first, second)
-    #     proper_result = (, )
-    #     self.assertEqual(proper_result, result)
-    #
-    #     new_first = second
-    #     new_second = first
-    #     new_result = tested_forest.calc_distance(new_first, new_second)
-    #     new_proper_result = (-proper_result[0], -proper_result[0])
-    #     self.assertEqual(new_proper_result, new_result)
+    def test_calc_distance_between_inner_node_and_adjacent_roots_inner_node_from_left(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[1].successors[1]
+        second = tested_forest.roots[0].successors[1]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (0, 5)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_inner_node_and_adjacent_roots_inner_node_from_right(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[0].successors[1]
+        second = tested_forest.roots[1].successors[2]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (0, -7)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_inner_node_and_adjacent_roots_leaf_from_left(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[1].successors[1]
+        second = tested_forest.roots[0].successors[1].successors[1]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (-1, 4)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_inner_node_and_adjacent_roots_leaf_from_right(self):
+        tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [3, 4, [5, 6, 7], [2, 5, 9]])
+        first = tested_forest.roots[0].successors[1]
+        second = tested_forest.roots[1].successors[2].successors[0]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (-1, -7)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
+
+    def test_calc_distance_between_inner_nodes_in_deep_wide_forest(self):
+        tested_forest = Forest.build_forest([0, [1, [2, [3, [4, 5, 6], 7, [8, 9, 0, 1]],
+                                                        [2, 3, [4, 5, 6, 7], [8, 9]],
+                                                        [0, 1, 2]],
+                                                    [3, 4, [5, 6, 7, 8], 9]]],
+                                            [0, 1, 2, 3], [4, [5, 6, 7], 8, [9, 0, 1]],
+                                            [2, [3, [4, [5, 6, 7, 8], 9, 0],
+                                                    [1, [2, 3, 4, 5], [6, 7, 8, 9], [0, 1, 2, 3]],
+                                                    [4, [5, 6, 7, 8], [9, 0, 1, 2]]],
+                                                [5, [6, 7, 8], [9, 0, 1], 2]])
+        first = tested_forest.roots[0].successors[0].successors[0].successors[0].successors[2]
+        second = tested_forest.roots[3].successors[1]
+        result = tested_forest.calc_distance(first, second)
+        proper_result = (3, -43)
+        self.assertEqual(proper_result, result)
+
+        new_first = second
+        new_second = first
+        new_result = tested_forest.calc_distance(new_first, new_second)
+        new_proper_result = (-proper_result[0], -proper_result[1])
+        self.assertEqual(new_proper_result, new_result)
 
     # TODO: Test tree-specific content and some forest functions on tree
 
