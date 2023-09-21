@@ -175,18 +175,16 @@ class GraphView(QGraphicsView):
             parent_multiline = forest_node.parent.content.childrenLine
             parent_multiline.deleteChild(graph_node.parentPort.portNumber)
 
-            if len(parent_multiline._children_ports) > 0:
-                for index in reversed(range(len(children))):
-                    graph_node.childrenLine.deleteChild(index + 1)
-                for index in range(len(children)):
-                    parent_multiline.addChild(children[index].content)
-            else:
-                for index in reversed(range(len(children))):
-                    graph_node.childrenLine.deleteChild(index + 1)
+            for index in reversed(range(len(children))):
+                graph_node.childrenLine.deleteChild(index + 1)
 
-                new_multiline = ConnectionMultiline(new_parent, children[0].content)
+            new_parent_multiline = new_parent.childrenLine
+            if new_parent_multiline is not None:
+                parent_multiline.addChild(children[0].content)
+            else:
+                new_parent_multiline = ConnectionMultiline(new_parent, children[0].content)
                 for child in children[1:]:
-                    new_multiline.addChild(child.content)
+                    new_parent_multiline.addChild(child.content)
 
             self._forest.move_subtree(forest_node, new_parent_forest_node)
             self._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
