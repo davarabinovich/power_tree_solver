@@ -29,6 +29,10 @@ class NetView(GraphView):
         self._parent_to_be_deleted: GraphNode | None = None
         self._parent_to_be_deleted_forest_node: Forest.ForestNode | None = None
 
+        self._cur_new_power_input_number = 1
+        self._cur_new_converter_number = 1
+        self._cur_new_consumer_number = 1
+
 
     def initNet(self):
         self._electric_net = ElectricNet()
@@ -43,6 +47,14 @@ class NetView(GraphView):
     def initView(self):
         cross = self.addCross(NetView.CROSS_POSITION)
         cross.clicked.connect(self._addInput)
+
+        self._is_waiting_for_node_selection = False
+        self._parent_to_be_deleted: GraphNode | None = None
+        self._parent_to_be_deleted_forest_node: Forest.ForestNode | None = None
+
+        self._cur_new_power_input_number = 1
+        self._cur_new_converter_number = 1
+        self._cur_new_consumer_number = 1
 
     contentChanged = pyqtSignal(name='contentChanged')
 
@@ -79,7 +91,20 @@ class NetView(GraphView):
         for child_item in graph_node.childItems():
             if isinstance(child_item, QGraphicsProxyWidget):
                 widget = child_item.widget()
-                widget.ui.nameLineEdit.setText(subroot.content.name)
+                if widget.ui.nameLineEdit.text != '':
+                    name = subroot.content.name
+                else:
+                    if isinstance(widget, SourceWidget):
+                        name = 'Input ' + str(self._cur_new_power_input_number)
+                        self._cur_new_power_input_number += 1
+                    elif isinstance(widget, ConverterWidget):
+                        name = 'Converter ' + str(self._cur_new_converter_number)
+                        self._cur_new_converter_number += 1
+                    else:
+                        name = 'Consumer ' + str(self._cur_new_consumer_number)
+                        self._cur_new_consumer_number += 1
+                widget.ui.nameLineEdit.setText(name)
+
                 widget.ui.valueLineEdit.setText(str(subroot.content.value))
                 if not isinstance(widget, LoadWidget):
                     widget.ui.loadValueLabel.setText(str(subroot.content.load))
@@ -172,6 +197,10 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(widget.changeName)
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
+        name = 'Input ' + str(self._cur_new_power_input_number)
+        self._cur_new_power_input_number += 1
+        ui_form.nameLineEdit.setText(name)
+
         # TODO: Do using decorators
         self.contentChanged.emit()
 
@@ -195,6 +224,10 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(widget.changeType)
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
+        name = 'Converter ' + str(self._cur_new_converter_number)
+        self._cur_new_converter_number += 1
+        ui_form.nameLineEdit.setText(name)
+
         self.contentChanged.emit()
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
@@ -214,6 +247,10 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
+
+        name = 'Consumer ' + str(self._cur_new_consumer_number)
+        self._cur_new_consumer_number += 1
+        ui_form.nameLineEdit.setText(name)
 
         self.contentChanged.emit()
 

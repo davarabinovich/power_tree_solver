@@ -35,19 +35,19 @@ class FileSaver(QObject):
     def _extract_node_type(node: Forest.ForestNode) -> str:
         type: ElectricNodeType = node.content.type
         if type == ElectricNodeType.INPUT:
-            return 'Power Input'
+            return 'Power_Input'
         elif type == ElectricNodeType.CONVERTER:
             converter_type: ConverterType = node.content.converter_type
             if converter_type == ConverterType.LINEAR:
-                return 'Linear Converter'
+                return 'Linear_Converter'
             else:
-                return 'Switching Converter'
+                return 'Switching_Converter'
         else:
             consumer_type: ConverterType = node.content.consumer_type
             if consumer_type == ConsumerType.CONSTANT_CURRENT:
-                return 'Constant Current Consumer'
+                return 'Constant_Current_Consumer'
             else:
-                return 'Resistive Consumer'
+                return 'Resistive_Consumer'
 
     @staticmethod
     def _extract_node_params(node: Forest.ForestNode) -> str:
@@ -100,8 +100,7 @@ class FileLoader(QObject):
                 level = int(tokens[1])
                 if level == 1:
                     node = self._net.create_input()
-                    if len(tokens) > 4:
-                        node.content.name = tokens[4][:-1]
+                    node.content.name = self._build_name_by_line_tokens(tokens)
                     cur_path = [node]
                 elif level < len(cur_path):
                     cur_path = cur_path[:level]
@@ -133,33 +132,40 @@ class FileLoader(QObject):
                 load = tokens[1][:-1]
                 cur_path[-1].content.load = float(load)
 
+    def _build_name_by_line_tokens(self, tokens: list[str]):
+        if len(tokens) == 4 and tokens[2] == ':':
+            return ''
+
+        name = tokens[3]
+        for token in tokens[4:]:
+            name += ' ' + token
+        name = name[:-1]
+        return name
+
     def _build_node_by_record(self, parent: Forest.ForestNode, tokens: list[str]) -> Forest.ForestNode:
         type_token = tokens[2]
-        if type_token == 'Power':
+        if type_token == 'Power_input':
             raise FileLoader.IncorrectNodeLevel
-        elif type_token == 'Switching':
+
+        elif type_token == 'Switching_Converter':
             node = self._net.add_converter(parent)
             node.content.converter_type = ConverterType.SWITCHING
-            if len(tokens) > 4:
-                node.content.name = tokens[4][:-1]
+            node.content.name = self._build_name_by_line_tokens(tokens)
             return node
-        elif type_token == 'Linear':
+        elif type_token == 'Linear_Converter':
             node = self._net.add_converter(parent)
             node.content.converter_type = ConverterType.LINEAR
-            if len(tokens) > 4:
-                node.content.name = tokens[4][:-1]
+            node.content.name = self._build_name_by_line_tokens(tokens)
             return node
-        elif type_token == 'Constant':
+        elif type_token == 'Constant_Current_Consumer':
             node = self._net.add_load(parent)
             node.content.consumer_type = ConsumerType.CONSTANT_CURRENT
-            if len(tokens) > 5:
-                node.content.name = tokens[5][:-1]
+            node.content.name = self._build_name_by_line_tokens(tokens)
             return node
-        elif type_token == 'Resistive':
+        elif type_token == 'Resistive_Consumer':
             node = self._net.add_load(parent)
             node.content.consumer_type = ConsumerType.RESISTIVE
-            if len(tokens) > 4:
-                node.content.name = tokens[4][:-1]
+            node.content.name = self._build_name_by_line_tokens(tokens)
             return node
         else:
             raise FileLoader.InvalidRecord
