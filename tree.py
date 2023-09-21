@@ -502,6 +502,7 @@ class Forest:
         width = 0
         for root in self._roots:
             width += root.calc_subtree_width()
+        width += len(self.roots) - 1
         return width
 
     def calc_left_part_subtree_width(self, section_node: Node, subroot: Node):

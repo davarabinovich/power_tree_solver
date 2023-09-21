@@ -1337,7 +1337,7 @@ class TestForestIteration(unittest.TestCase):
 # TODO: Swap expected and actual everywhere
 # TODO: Test find root
 
-class TestTree(unittest.TestCase):
+class TestForestCalcDistance(unittest.TestCase):
     def test_calc_distance_simple_case(self):
         tested_forest = Forest.build_forest([0, [1, 2, 3, 4], 5])
         first = tested_forest.roots[0].successors[0]
