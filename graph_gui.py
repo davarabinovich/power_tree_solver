@@ -137,13 +137,24 @@ class GraphView(QGraphicsView):
             print('')
 
         else:
-            # Ensure, that it's not closing movement
             new_parent_forest_node: Node = new_parent.data(GraphView._FOREST_NODE_DATA_KEY)
             if forest_node.is_ancestor(new_parent_forest_node):
                 # TODO: Handle this case properly
                 return
 
+            furthest_leaf, subtree_width = self._forest.find_furthest_leaf_with_distance(forest_node)
+            if forest_node.is_root():
+                distance = subtree_width + 1
+            elif len(forest_node.parent.successors) == 1:
+                distance = subtree_width
+            else:
+                distance = subtree_width + 1
+            for i in range(distance):
+                self._moveNodesAbove(furthest_leaf)
+
             delta_x, delta_y = self._forest.calc_distance(forest_node, new_parent_forest_node)
+            if delta_y < 0:
+                delta_y += distance
             children = forest_node.successors
 
             cur_ancestor = new_parent_forest_node
@@ -159,7 +170,7 @@ class GraphView(QGraphicsView):
                 self._moveNodesBelow(top_moving_node, GraphView.VERTICAL_STEP)
             for child in children:
                 self._moveSubtreeLeft(child, delta_x * GraphView.HORIZONTAL_STEP)
-                self._moveSubtreeBelow(child, delta_y * GraphView.VERTICAL_STEP)
+                self._moveSubtreeBelow(child, -delta_y * GraphView.VERTICAL_STEP)
 
             parent_multiline = forest_node.parent.content.childrenLine
             parent_multiline.deleteChild(graph_node.parentPort.portNumber)
