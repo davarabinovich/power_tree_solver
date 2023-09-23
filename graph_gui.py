@@ -336,5 +336,5 @@ class GraphView(QGraphicsView):
     def _calcNewRootPosition(self) -> QPointF:
         x = GraphView.HORIZONTAL_GAP
         layer = self._forest.calc_width() + 1
-        y = GraphView.VERTICAL_GAP + (layer-1) * GraphView.VERTICAL_STEP
+        y = GraphView.VERTICAL_GAP + (layer) * GraphView.VERTICAL_STEP
         return QPointF(x, y)

@@ -3,8 +3,8 @@
 #       modify the net tree
 
 from __future__ import annotations
-from electric_net import *
 
+from electric_net import *
 from graph_gui import *
 from graph_gui_int import *
 from source_node import *
@@ -45,6 +45,9 @@ class NetView(GraphView):
         self.blockSignals(False)
 
     def initView(self):
+        scene_rect = QRectF(0, 0, 1000, 1000)
+        self._scene.setSceneRect(scene_rect)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
         cross = self.addCross(NetView.CROSS_POSITION)
         cross.clicked.connect(self._addInput)
 
