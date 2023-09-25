@@ -50,7 +50,7 @@ class GraphView(QGraphicsView):
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
 
     def addCross(self, position: QPointF) -> PlusIcon:
-        cross = PlusIcon()
+        cross = PlusIcon(None, 'Add Power Input')
         self._scene.addItem(cross)
         cross.moveBy(position.x(), position.y())
         return cross
@@ -103,14 +103,16 @@ class GraphView(QGraphicsView):
         self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
 
+        self._updateSceneRect()
+
     def deleteParent(self, graph_node: GraphNode, new_parent: GraphNode=None):
-        def is_promotion_needed(forest_node: Node, new_parent: GraphNode = None):
+        def is_promotion_needed(forest_node: Node, new_parent: GraphNode):
             result = True
             if new_parent is None:
                 result = False
             elif forest_node.is_root():
                 result = False
-            elif id(forest_node.parent) != id(new_parent):
+            elif id(forest_node.parent) != id(new_parent.data(GraphView._FOREST_NODE_DATA_KEY)):
                 result = False
             return result
 
@@ -357,8 +359,8 @@ class GraphView(QGraphicsView):
     def _updateSceneRect(self):
         items_rect = self._scene.itemsBoundingRect()
         scene_rect = self._scene.sceneRect()
-        new_width = items_rect.x() + items_rect.width() - scene_rect.x()
-        new_height = items_rect.y() + items_rect.height() - scene_rect.y()
+        new_width = items_rect.x() + items_rect.width() + GraphView.HORIZONTAL_INDENT - scene_rect.x()
+        new_height = items_rect.y() + items_rect.height() + GraphView.VERTICAL_INDENT - scene_rect.y()
         scene_rect.setWidth(new_width)
         scene_rect.setHeight(new_height)
         self._scene.setSceneRect(scene_rect)
