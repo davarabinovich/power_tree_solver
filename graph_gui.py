@@ -4,10 +4,12 @@
 #     - manual control of scene rect
 #     - use different view updating policy (method, see GraphicsView reference, BSP tree)
 
-from enum import Enum
+from PyQt6 import QtCore
+
 from settings import *
 from tree import *
 from graph_gui_int import *
+
 
 # TODO: Try to separate scene from view creating another class GraphGUI referencing both them
 # TODO: Now there is double link between scene objects set and forest - every graph node references to forest node, \
@@ -37,6 +39,12 @@ class GraphView(QGraphicsView):
 
     nodeSideWidgetClicked = pyqtSignal('PyQt_PyObject', int, name='nodeSideWidgetClicked')
 
+
+    def init(self):
+        # TODO: It needs to reset here
+        scene_rect = QRectF(0, 0, 1000, 1000)
+        self._scene.setSceneRect(scene_rect)
+        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
 
     def addCross(self, position: QPointF) -> PlusIcon:
         cross = PlusIcon()

@@ -45,9 +45,8 @@ class NetView(GraphView):
         self.blockSignals(False)
 
     def initView(self):
-        scene_rect = QRectF(0, 0, 1000, 1000)
-        self._scene.setSceneRect(scene_rect)
-        self.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.init()
+
         cross = self.addCross(NetView.CROSS_POSITION)
         cross.clicked.connect(self._addInput)
 
