@@ -18,8 +18,10 @@ class GraphView(QGraphicsView):
     # Public interface
     HORIZONTAL_GAP = 150
     VERTICAL_GAP = 50
-    VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
     HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
+    VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
+    HORIZONTAL_INDENT = HORIZONTAL_GAP
+    VERTICAL_INDENT = VERTICAL_GAP
 
     LINE_COLOR = QColorConstants.Red
     LINE_THICKNESS = 3
@@ -42,7 +44,8 @@ class GraphView(QGraphicsView):
 
     def init(self):
         # TODO: It needs to reset here
-        scene_rect = QRectF(0, 0, 1000, 1000)
+        vertical_shift = self.geometry().y()
+        scene_rect = QRectF(0, vertical_shift, GraphView.HORIZONTAL_INDENT, GraphView.VERTICAL_INDENT-vertical_shift)
         self._scene.setSceneRect(scene_rect)
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
 
@@ -57,6 +60,8 @@ class GraphView(QGraphicsView):
         root = self._createNodeOnScene(position, widget, side_widgets)
         forest_node = self._forest.create_root()
         self._linkGraphAndForestNodes(root, forest_node)
+        self._updateSceneRect()
+
         return root
 
     # TODO: replace QGraphicsItem with GraphNode
@@ -73,6 +78,8 @@ class GraphView(QGraphicsView):
         forest_node = self._forest.add_leaf(parent_forest_node)
         self._linkGraphAndForestNodes(child, forest_node)
         self._drawConnection(parent, child)
+
+        self._updateSceneRect()
 
         return child
 
@@ -346,3 +353,12 @@ class GraphView(QGraphicsView):
         layer = self._forest.calc_width() + 1
         y = GraphView.VERTICAL_GAP + (layer) * GraphView.VERTICAL_STEP
         return QPointF(x, y)
+
+    def _updateSceneRect(self):
+        items_rect = self._scene.itemsBoundingRect()
+        scene_rect = self._scene.sceneRect()
+        new_width = items_rect.x() + items_rect.width() - scene_rect.x()
+        new_height = items_rect.y() + items_rect.height() - scene_rect.y()
+        scene_rect.setWidth(new_width)
+        scene_rect.setHeight(new_height)
+        self._scene.setSceneRect(scene_rect)
