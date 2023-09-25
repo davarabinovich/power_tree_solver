@@ -24,27 +24,28 @@ class AppSupervisor(QObject):
     def receiveSaveAsAction(self):
         file_url_tuple = QFileDialog.getSaveFileUrl(self._main_window,
                                                     caption="Save Electric Net", filter="Electric Net (*.ens)")
+        if file_url_tuple[0].isEmpty():
+            return False
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         self.needToSaveActiveNet.emit(self._active_net, file_path)
+        return True
 
     needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, name='needToSaveActiveNet')
 
-    @pyqtSlot()
-    # TODO: It shall be called in only case, when some changes were performed from the last saving.
-    # TODO: Main Window disappear, when messageBox pops up
-    def receiveQuit(self):
-        if self._active_net is None:
-            return
-
+    def handleChangingNet(self):
         pressed_button = QMessageBox.question(self._main_window,
-                                      'The net was probably changed', 'Do you want to save changes in the net?')
+                                              'The net was probably changed', 'Do you want to save changes in the net?')
         if pressed_button == QMessageBox.StandardButton.Yes:
-            self.receiveSaveAsAction()
+            is_saved = self.receiveSaveAsAction()
+            return is_saved
+        return True
 
     @pyqtSlot()
     def receiveCreateNewAction(self):
         if self._active_net is not None:
-            self.receiveQuit()
+            is_cancelled = not self.handleChangingNet()
+            if is_cancelled:
+                return
             self._ui.graphview.reset()
 
         self._ui.graphview.initNet()
@@ -58,7 +59,9 @@ class AppSupervisor(QObject):
     @pyqtSlot()
     def receiveLoadFromAction(self):
         if self._active_net is not None:
-            self.receiveQuit()
+            is_cancelled = not self.handleChangingNet()
+            if is_cancelled:
+                return
             self._ui.graphview.reset()
 
         file_url_tuple = QFileDialog.getOpenFileUrl(self._main_window,
@@ -82,10 +85,27 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._ui = ui
         self._ui.setupUi(self)
+        self._supervisor: AppSupervisor | None = None
 
-    def resizeEvent(self, a0: typing.Optional[QtGui.QResizeEvent]) -> None:
-        new_size = self.size()
-        self._ui.graphview.resize(new_size)
+    # TODO: MainWindow shall know nothing about net
+    def setSupervisor(self, sv: AppSupervisor):
+        self._sv = sv
+
+    def closeEvent(self, a0: typing.Optional[QtGui.QCloseEvent]) -> None:
+        if self._sv._active_net is None:
+            a0.accept()
+            return
+
+        pressed_button = QMessageBox.question(self,
+                                              'The net was probably changed', 'Do you want to save changes in the net?')
+        if pressed_button == QMessageBox.StandardButton.Yes:
+            is_saved = self._sv.receiveSaveAsAction()
+            if is_saved:
+                a0.accept()
+            else:
+                a0.ignore()
+        else:
+            a0.accept()
 
 def main():
     app = QApplication(sys.argv)
@@ -98,11 +118,10 @@ def main():
     solver.loadCalculated.connect(net_view.updateLoads)
 
     supervisor = AppSupervisor(window, ui, solver)
+    window.setSupervisor(supervisor)
     file_saver = FileSaver()
     ui.actionSaveAs.triggered.connect(supervisor.receiveSaveAsAction)
     supervisor.needToSaveActiveNet.connect(file_saver.saveNetToFile)
-
-    app.aboutToQuit.connect(supervisor.receiveQuit)
 
     ui.actionCreateNew.triggered.connect(supervisor.receiveCreateNewAction)
     ui.actionLoadFrom.triggered.connect(supervisor.receiveLoadFromAction)
