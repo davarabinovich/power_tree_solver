@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1249</width>
-    <height>819</height>
+    <width>1250</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -21,7 +21,7 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
@@ -29,14 +29,14 @@
    <widget class="NetView" name="graphview" native="true">
     <property name="geometry">
      <rect>
-      <x>-1</x>
-      <y>-1</y>
-      <width>1251</width>
-      <height>771</height>
+      <x>0</x>
+      <y>-22</y>
+      <width>1250</width>
+      <height>800</height>
      </rect>
     </property>
     <property name="sizePolicy">
-     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
       <horstretch>0</horstretch>
       <verstretch>0</verstretch>
      </sizepolicy>
@@ -48,7 +48,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1249</width>
+     <width>1250</width>
      <height>22</height>
     </rect>
    </property>

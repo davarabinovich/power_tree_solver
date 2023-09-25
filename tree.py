@@ -139,6 +139,17 @@ class Node:
 
         return width
 
+    def calc_subtree_depth(self):
+        depth = 0
+        if self.is_parent():
+            depth = 1
+            additional_depth = 0
+            for child in self._successors:
+                child_subtree_depth = child.calc_subtree_depth()
+                if child_subtree_depth > additional_depth:
+                    additional_depth = child_subtree_depth
+            depth += additional_depth
+        return depth
     # TODO: it is used in only graph_gui. Need to be used in Tree module.
     def index_by_parent(self):
         parent = self._parent
@@ -504,6 +515,14 @@ class Forest:
             width += root.calc_subtree_width()
         width += len(self.roots) - 1
         return width
+
+    def calc_depth(self):
+        depth = 0
+        for root in self._roots:
+            tree_depth = root.calc_subtree_depth()
+            if tree_depth > depth:
+                depth = tree_depth
+        return depth
 
     def calc_left_part_subtree_width(self, section_node: Node, subroot: Node):
         width = 0

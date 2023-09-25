@@ -615,6 +615,37 @@ class TestNodeCalcSubtreeWidth(unittest.TestCase):
         self.assertEqual(proper_result, result)
 
 
+class TestNodeCalcSubtreeDepth(unittest.TestCase):
+    def test_calc_alone_node_depth(self):
+        tested_root = Node.build_tree([1])
+        result = tested_root.calc_subtree_depth()
+        proper_result = 0
+        self.assertEqual(proper_result, result)
+
+    def test_calc_vertical_subtree_depth(self):
+        tested_root = Node.build_tree([1, [2, [3, [4, [5, [6, [7, [8, [9, 0, 1], 2], 3], 4], 5], 6], 7], 8], 9])
+        result = tested_root.calc_subtree_depth()
+        proper_result = 9
+        self.assertEqual(proper_result, result)
+
+    def test_calc_equally_spread_subtree_depth(self):
+        tested_root = Node.build_tree([1, [2, 3, 4, 5], [6, 7, 8, 9], [0, 1, 2, 3]])
+        result = tested_root.calc_subtree_depth()
+        proper_result = 2
+        self.assertEqual(proper_result, result)
+
+    def test_calc_right_skewed_subtree_depth(self):
+        tested_root = Node.build_tree([1, 2, [6, 7], [0, 1, 2, 3]])
+        result = tested_root.calc_subtree_depth()
+        proper_result = 2
+        self.assertEqual(proper_result, result)
+
+    def test_calc_left_skewed_subtree_depth(self):
+        tested_root = Node.build_tree([1, [2, 3, 4, 5], [6, 7], 0])
+        result = tested_root.calc_subtree_depth()
+        proper_result = 2
+        self.assertEqual(proper_result, result)
+
 # TODO: Need to test index_by_parent
 
 # TODO: Check equivalency of work of two different methods where it's possible (for example add_leaf to None and create_root)
