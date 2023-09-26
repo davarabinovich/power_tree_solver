@@ -28,6 +28,7 @@ class GraphView(QGraphicsView):
 
 
     class DeletingParentAsLeaf(Exception): pass
+    class ClosingSubtreeReconnection(Exception): pass
 
 
     def __init__(self, parent: QWidget=None):
@@ -134,15 +135,12 @@ class GraphView(QGraphicsView):
             self._forest.delete_subtree(forest_node)
 
         elif is_promotion_needed(forest_node, new_parent):
-            items = self._scene.items()
             children = forest_node.successors
             for child in children:
                 self._moveSubtreeLeft(child)
 
-            items = self._scene.items()
             parent_multiline = new_parent.childrenLine
             parent_multiline.deleteChild(graph_node.parentPort.portNumber)
-            items = self._scene.items()
 
             if len(parent_multiline._children_ports) > 0:
                 for index in reversed(range(len(children))):
@@ -157,18 +155,13 @@ class GraphView(QGraphicsView):
                 for child in children[1:]:
                     new_multiline.addChild(child.content)
 
-            items = self._scene.items()
             self._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
             self._scene.removeItem(graph_node)
-
-            items = self._scene.items()
-            print('')
 
         else:
             new_parent_forest_node: Node = new_parent.data(GraphView._FOREST_NODE_DATA_KEY)
             if forest_node.is_ancestor(new_parent_forest_node):
-                # TODO: Handle this case properly
-                return
+                raise GraphView.ClosingSubtreeReconnection
 
             furthest_leaf, subtree_width = self._forest.find_furthest_leaf_with_distance(forest_node)
             if forest_node.is_root():
