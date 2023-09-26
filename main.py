@@ -86,10 +86,31 @@ class MainWindow(QMainWindow):
         self._ui = ui
         self._ui.setupUi(self)
         self._supervisor: AppSupervisor | None = None
+        self._was_first_resize = False
 
     # TODO: MainWindow shall know nothing about net
     def setSupervisor(self, sv: AppSupervisor):
         self._sv = sv
+
+    def resizeEvent(self, a0: typing.Optional[QtGui.QResizeEvent]) -> None:
+        if not self._was_first_resize:
+            self._was_first_resize = True
+            return
+
+        old_size = a0.oldSize()
+        new_size = a0.size()
+        width_difference = new_size.width() - old_size.width()
+        height_difference = new_size.height() - old_size.height()
+
+        central_widget_geometry = self._ui.centralwidget.geometry()
+        central_widget_geometry.setWidth(central_widget_geometry.width() + width_difference)
+        central_widget_geometry.setHeight(central_widget_geometry.height() + height_difference)
+        self._ui.centralwidget.setGeometry(central_widget_geometry)
+
+        net_view_geometry = self._ui.graphview.geometry()
+        net_view_geometry.setWidth(net_view_geometry.width() + width_difference)
+        net_view_geometry.setHeight(net_view_geometry.height() + height_difference)
+        self._ui.graphview.setGeometry(net_view_geometry)
 
     def closeEvent(self, a0: typing.Optional[QtGui.QCloseEvent]) -> None:
         if self._sv._active_net is None:
