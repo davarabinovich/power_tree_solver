@@ -258,13 +258,12 @@ class NetView(GraphView):
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _deleteNode(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
-        items = self._scene.items()
         if forest_node.is_leaf():
             self.deleteLeaf(graph_node)
             self._electric_net._forest.delete_leaf(forest_node)
         else:
             mode_selection_message_box = QMessageBox(self)
-            mode_selection_message_box.setWindowTitle('The node with successors are being deleted')
+            mode_selection_message_box.setWindowTitle('This node has successors')
             mode_selection_message_box.setText('What do you want to do with successors?')
             delete_button = mode_selection_message_box.addButton('Delete', QMessageBox.ButtonRole.NoRole)
             reconnect_button = mode_selection_message_box.addButton('Reconnect', QMessageBox.ButtonRole.NoRole)
@@ -285,6 +284,11 @@ class NetView(GraphView):
                 else:
                     pass
             else:
+                buttons = mode_selection_message_box.buttons()
+                button_width = buttons[0].geometry().width()
+                for button in buttons:
+                    button.move(-int(button_width/2), 0)
+
                 mode_selection_message_box.exec()
                 if mode_selection_message_box.clickedButton() == delete_button:
                     self.deleteParent(graph_node)
