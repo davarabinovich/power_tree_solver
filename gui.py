@@ -1,6 +1,5 @@
 
 from PyQt6.QtWidgets import QMainWindow
-from main_window import Ui_MainWindow
 
 
 # TODO: Implement singleton

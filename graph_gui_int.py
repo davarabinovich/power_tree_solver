@@ -1,6 +1,5 @@
 
 from __future__ import annotations
-from recordclass import recordclass
 from math import *
 
 from PyQt6.QtWidgets import *
@@ -8,8 +7,15 @@ from PyQt6.QtGui import *
 from PyQt6.QtCore import *
 
 
-NodePortToParent = recordclass('NodePortToParent', 'multiline portNumber')  # Port numbers start from 1
-MultilinePort = recordclass('MultilinePort', 'line node')
+class NodePortToParent:
+    def __init__(self, multiline, portNumber):
+        self.multiline = multiline
+        self.portNumber = portNumber
+
+class MultilinePort:
+    def __init__(self, line, node):
+        self.line = line
+        self.node = node
 
 
 class GraphNode(QGraphicsObject):
@@ -247,13 +253,11 @@ class ConnectionMultiline:
 
     def insertChild(self, child: GraphNode, port_number):
         child.parentPort = NodePortToParent(multiline=self, portNumber=port_number)
-        items = self._scene.items()
 
         top_branch_point = self._parent_line.line().p2()
         child_connection_point = child.calcConnectionPointForChild()
         child_branch_point = QPointF(top_branch_point.x(), child_connection_point.y())
         self._insertChildLine(child_branch_point, child_connection_point, child, port_number)
-        items = self._scene.items()
 
         children_number = self._getChildrenNumber()
         if children_number == port_number:
@@ -261,12 +265,10 @@ class ConnectionMultiline:
             branch_qlinef = self._branch_line.line()
             branch_qlinef.setP2(bottom_branch_point)
             self._branch_line.setLine(branch_qlinef)
-        items = self._scene.items()
 
         for index in range(port_number-1, len(self._children_ports)):
             child_parent_port = self._children_ports[index].node.parentPort
             child_parent_port.portNumber = index + 1
-        items = self._scene.items()
 
         return
 
@@ -345,8 +347,6 @@ class ConnectionMultiline:
         self._scene.removeItem(self._parent_line)
         self._parent.childrenLine = None
         self._parent = None
-
-
 
     def __del__(self):
         print("Multiline is deleted")

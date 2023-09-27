@@ -11,6 +11,8 @@ from source_node import *
 from converter_node import *
 from load_node import *
 
+from logger_if import *
+
 
 # TODO: Rename load to consumer
 class NetView(GraphView):
@@ -25,6 +27,9 @@ class NetView(GraphView):
     def __init__(self, parent: QWidget=None):
         super().__init__(parent)
         self._electric_net = None
+        self._is_valid = True
+        self._logger: LoggerIf | None = None
+
         self._is_waiting_for_node_selection = False
         self._parent_to_be_deleted: GraphNode | None = None
         self._parent_to_be_deleted_forest_node: Forest.ForestNode | None = None
@@ -44,8 +49,9 @@ class NetView(GraphView):
             self._placeSubtree(input)
         self.blockSignals(False)
 
-    def initView(self):
+    def initView(self, logger: LoggerIf=None):
         self.init()
+        self._logger = logger
 
         cross = self.addCross(NetView.CROSS_POSITION)
         cross.clicked.connect(self._addInput)
@@ -96,6 +102,8 @@ class NetView(GraphView):
             self.deleteParent(self._parent_to_be_deleted, selected_node)
             self._electric_net._forest.move_subtree(self._parent_to_be_deleted_forest_node, selected_forest_node)
             self._electric_net._forest.cut_node(self._parent_to_be_deleted_forest_node)
+
+            self._log()
 
             self._is_waiting_for_node_selection = False
             self._parent_to_be_deleted = None
@@ -168,6 +176,8 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(widget.changeName)
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
+        self._log()
+
         return input
 
     def placeConverter(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
@@ -188,6 +198,8 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(widget.changeType)
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
+        self._log()
+
         return converter
 
     def placeLoad(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
@@ -205,6 +217,8 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
+
+        self._log()
 
         return load
 
@@ -229,6 +243,8 @@ class NetView(GraphView):
         name = 'Input ' + str(self._cur_new_power_input_number)
         self._cur_new_power_input_number += 1
         ui_form.nameLineEdit.setText(name)
+
+        self._log()
 
         # TODO: Do using decorators
         self.contentChanged.emit()
@@ -257,6 +273,8 @@ class NetView(GraphView):
         self._cur_new_converter_number += 1
         ui_form.nameLineEdit.setText(name)
 
+        self._log()
+
         self.contentChanged.emit()
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
@@ -280,6 +298,8 @@ class NetView(GraphView):
         name = 'Consumer ' + str(self._cur_new_consumer_number)
         self._cur_new_consumer_number += 1
         ui_form.nameLineEdit.setText(name)
+
+        self._log()
 
         self.contentChanged.emit()
 
@@ -330,6 +350,8 @@ class NetView(GraphView):
                     self._parent_to_be_deleted = graph_node
                     self._parent_to_be_deleted_forest_node = forest_node
                     return
+
+        self._log()
 
         self.contentChanged.emit()
 
@@ -422,6 +444,23 @@ class NetView(GraphView):
         load_ui.valueLineEdit.setValidator(QDoubleValidator())
 
         return widget, load_ui
+
+    def _log(self, action, *argv):
+        if self._logger is None:
+            return
+
+        if self._is_valid:
+            self._logger.write_action(action, argv)
+            is_valid = self._validate()
+            if is_valid:
+                self._logger.remove_last_structure_record()
+            else:
+                self._logger.mark_as_invalid()
+                self._is_valid = False
+            self._logger.write_structure(self)
+
+    def _validate(self):
+        return True
 
 
 class SourceWidget(QWidget):

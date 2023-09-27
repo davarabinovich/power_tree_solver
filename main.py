@@ -2,9 +2,11 @@
 import typing
 import sys
 
-from app_config import *
-from gui import *
+from main_window import *
+from solver import *
 from net_view import *
+from file_saver import *
+from logger_impl import *
 
 
 VERSION = (0, 1, "alfa")
@@ -18,6 +20,8 @@ class AppSupervisor(QObject):
         self._solver = solver
         self._active_net = None
 
+        self._logger: LoggerImpl | None = None
+
     # TODO: Ensure, that it's not needed to resolve the net manually when saving is called
     # TODO: Program crushes, when cancel is pressed
     @pyqtSlot()
@@ -27,6 +31,9 @@ class AppSupervisor(QObject):
         if file_url_tuple[0].isEmpty():
             return False
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
+
+        self._logger.set_log_location(file_path)
+
         self.needToSaveActiveNet.emit(self._active_net, file_path)
         return True
 
@@ -51,7 +58,9 @@ class AppSupervisor(QObject):
         self._ui.graphview.initNet()
         self._solver.setNet(self._ui.graphview.electric_net)
         self._active_net = self._ui.graphview.electric_net
-        self._ui.graphview.initView()
+
+        self._logger = LoggerImpl()
+        self._ui.graphview.initView(self._logger)
         self._ui.graphview._addInput()
 
         self._ui.actionSaveAs.setEnabled(True)
@@ -74,7 +83,10 @@ class AppSupervisor(QObject):
         net = file_loader.load_net_from_file(file_path)
         self._solver.setNet(net)
         self._active_net = net
-        self._ui.graphview.initView()
+
+        self._logger = LoggerImpl()
+        self._logger.set_log_location(file_path)
+        self._ui.graphview.initView(self._logger)
         self._ui.graphview.setNet(net)
 
         self._ui.actionSaveAs.setEnabled(True)
