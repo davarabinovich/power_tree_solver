@@ -39,6 +39,9 @@ class NetView(GraphView):
         self._cur_new_converter_number = 1
         self._cur_new_consumer_number = 1
 
+        self._nodes = 0
+        self._lines = 0
+
 
     def initNet(self):
         self._electric_net = ElectricNet()
@@ -479,70 +482,102 @@ class NetView(GraphView):
                 self._is_valid = False
 
     def _validate(self):
-        # Reset _nodes, _lines
-        #
-        # Collect graphic roots
-        # Check siblings(graphic roots, forest roots, first root position)
-        #
-        # Check siblings(graph siblings list, forest siblings list, initial search position):
-        #     shift = initial search position
-        #     for sibling in graph siblings list (indexing):
-        #         Get graph node by shift, check it's the same as sibling and check there is no other items
-        #         Get corresponding forest node
-        #         new_width = Check subtree(graph node, forest node)
-        #         Update shift by width
-        #         width += new_width
-        #
-        # Check subtree(subroot, forest_subroot):
-        #     Inc _nodes
-        #     Check nodes coherency(subroot, forest_subroot)
-        #     Compare children length
-        #
-        #     width = 0
-        #     Take parent port
-        #     if is parent port:
-        #         Take parent port
-        #         Compare subroot id and id of node in child port by number taken from subroot's parent port
-        #         Check child line placement and there is no other items
-        #         Inc _lines
-        #     Take children line
-        #     if is children line:
-        #         Check parent line placement and there is no other items
-        #         Inc _lines
-        #         Compare id of subroot and childen line's parent
-        #         Collect children list
-        #         Check siblings(children list)
-        #         Check branch line placement by shift and there is no other items
-        #         Inc _lines
-        #         width += len(children ports) - 1
-        #     return width
-        #
-        # Check nodes coherency(graph node, forest node):
-        #     Check links consistency
-        #     Get parents
-        #     Check parents' links consistency
-        #
-        # Get all nodes
-        # Compare len(nodes) == _nodes
-        #
-        # Get all lines
-        # Compare len(lines) == _lines
-        #
-        # Optionally check there is no extra nodes and lines, no shortage of nodes and lines
-        # Optionally check scene size
-        #
-        # Check are forests coherent together:
-        #     Compare roots amount
-        #     for root in roots:
-        #         Check are subtree coherent together:
-        #             Get electric node by widget
-        #             Check link is correct by id
-        #             Compare children amount
-        #             for child in children:
-        #                 Check are subtree coherent together
-        #
-        # Optionally validate forests
+        self._nodes = 0
+        self._lines = 0
 
+        graphic_roots = self._collect_graphic_roots()
+        initial_search_position = NetView()._calcNewRootPosition()
+        is_scene_valid_and_coherent_to_view_forest = self._check_siblings(graphic_roots, self._forest.roots,
+                                                                          initial_search_position)
+        if not is_scene_valid_and_coherent_to_view_forest:
+            return False
+
+        nodes_amount = self._get_all_nodes()
+        if nodes_amount != self._nodes:
+            return False
+
+        lines_amount = self._get_all_lines()
+        if lines_amount != self._lines:
+            return False
+
+        is_scene_size_correct = self._check_scene_size()
+        if not is_scene_size_correct:
+            return False
+
+        are_forests_coherent = self._check_forests_coherency()
+        if not are_forests_coherent:
+            return False
+
+        is_graphic_forest_valid = self._forest.is_forest_valid()
+        if not is_graphic_forest_valid:
+            return False
+
+        is_electric_forest_valid = self._electric_net._forest.is_forest_valid()
+        if not is_electric_forest_valid:
+            return False
+
+        return True
+
+    def _collect_graphic_roots(self) -> list[GraphNode]:
+        return []
+
+    def _check_siblings(self, graphic_siblings, forest_siblings, initial_search_position):
+        # shift = initial search position
+        # for sibling in graph siblings list (indexing):
+        #     Get graph node by shift, check it's the same as sibling and check there is no other items
+        #     Get corresponding forest node
+        #     new_width = Check subtree(graph node, forest node)
+        #     Update shift by width
+        #     width += new_width
+        return True
+
+    # Check subtree(subroot, forest_subroot):
+    #     Inc _nodes
+    #     Check nodes coherency(subroot, forest_subroot)
+    #     Compare children length
+    #
+    #     width = 0
+    #     Take parent port
+    #     if is parent port:
+    #         Take parent port
+    #         Compare subroot id and id of node in child port by number taken from subroot's parent port
+    #         Check child line placement and there is no other items
+    #         Inc _lines
+    #     Take children line
+    #     if is children line:
+    #         Check parent line placement and there is no other items
+    #         Inc _lines
+    #         Compare id of subroot and childen line's parent
+    #         Collect children list
+    #         Check siblings(children list)
+    #         Check branch line placement by shift and there is no other items
+    #         Inc _lines
+    #         width += len(children ports) - 1
+    #     return width
+
+    # Check nodes coherency(graph node, forest node):
+    #     Check links consistency
+    #     Get parents
+    #     Check parents' links consistency
+
+    def _get_all_nodes(self):
+        return 0
+
+    def _get_all_lines(self):
+        return 0
+
+    def _check_scene_size(self):
+        return True
+
+    def _check_forests_coherency(self):
+    #     Compare roots amount
+    #     for root in roots:
+    #         Check are subtree coherent together:
+    #             Get electric node by widget
+    #             Check link is correct by id
+    #             Compare children amount
+    #             for child in children:
+    #                 Check are subtree coherent together
         return True
 
 
