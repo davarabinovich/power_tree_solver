@@ -3,6 +3,8 @@
 #       modify the net tree
 
 from __future__ import annotations
+from typing import Optional
+from math import ceil
 
 from electric_net import *
 
@@ -485,8 +487,10 @@ class NetView(GraphView):
         self._nodes = 0
         self._lines = 0
 
-        graphic_roots = self._collect_graphic_roots()
-        initial_search_position = NetView()._calcNewRootPosition()
+        initial_search_position = QPointF(GraphView.HORIZONTAL_INDENT, GraphView.VERTICAL_INDENT)
+        graphic_roots = self._collect_graphic_roots(initial_search_position)
+        if graphic_roots is None:
+            return False
         is_scene_valid_and_coherent_to_view_forest = self._check_siblings(graphic_roots, self._forest.roots,
                                                                           initial_search_position)
         if not is_scene_valid_and_coherent_to_view_forest:
@@ -518,45 +522,120 @@ class NetView(GraphView):
 
         return True
 
-    def _collect_graphic_roots(self) -> list[GraphNode]:
-        return []
+    def _collect_graphic_roots(self, initial_search_position: QPointF) -> Optional[list[GraphNode]]:
+        def is_search_position_out_of_scene(net_view: NetView, search_position: QPointF):
+            scene_rect = net_view._scene.sceneRect()
+            scene_bottom_bound = scene_rect.bottom()
+            result = search_position.y() >= scene_bottom_bound
+            return result
 
-    def _check_siblings(self, graphic_siblings, forest_siblings, initial_search_position):
-        # shift = initial search position
-        # for sibling in graph siblings list (indexing):
-        #     Get graph node by shift, check it's the same as sibling and check there is no other items
-        #     Get corresponding forest node
-        #     new_width = Check subtree(graph node, forest node)
-        #     Update shift by width
-        #     width += new_width
+        roots = []
+        search_position = initial_search_position
+        while not is_search_position_out_of_scene(self, search_position):
+            node = self._get_node_at_point(search_position)
+            if node is None:
+                return None
+            roots.append(node)
+            search_position = QPointF(search_position.x(), search_position.y()+GraphView.VERTICAL_STEP)
+
+        return roots
+
+    def _check_siblings(self, graphic_siblings: list[GraphNode], forest_siblings: list[Forest.ForestNode],
+                        initial_search_position: QPointF):
+        search_position = initial_search_position
+        for index in range(len(graphic_siblings)):
+            graphic_sibling = self._get_node_at_point(search_position)
+            if graphic_sibling is None:
+                return False
+            if id(graphic_sibling) != id(graphic_siblings[index]):
+                return False
+
+            forest_sibling = forest_siblings[index]
+            width = self._check_subtree(graphic_sibling, forest_sibling)
+            if width is None:
+                return False
+
+            search_position = QPointF(search_position.x(), search_position.y()+width*GraphView.VERTICAL_STEP)
+
         return True
 
-    # Check subtree(subroot, forest_subroot):
-    #     Inc _nodes
-    #     Check nodes coherency(subroot, forest_subroot)
-    #     Compare children length
-    #
-    #     width = 0
-    #     Take parent port
-    #     if is parent port:
-    #         Take parent port
-    #         Compare subroot id and id of node in child port by number taken from subroot's parent port
-    #         Check child line placement and there is no other items
-    #         Inc _lines
-    #     Take children line
-    #     if is children line:
-    #         Check parent line placement and there is no other items
-    #         Inc _lines
-    #         Compare id of subroot and childen line's parent
-    #         Collect children list
-    #         Check siblings(children list)
-    #         Check branch line placement by shift and there is no other items
+    def _check_subtree(self, graphic_subroot: GraphNode, forest_subroot: Forest.ForestNode) -> Optional[int]:
+        self._nodes += 1
+
+        are_roots_coherent = self._check_nodes_coherency(graphic_subroot, forest_subroot)
+        if not are_roots_coherent:
+            return None
+
+        subroot_parent_port = graphic_subroot.parentPort
+        if subroot_parent_port:
+            subroot_in_parent_line = subroot_parent_port. \
+                multiline._children_ports[subroot_parent_port.portNumber-1].node
+            if id(graphic_subroot) != id(subroot_in_parent_line):
+                return None
+
+            child_line = subroot_parent_port.multiline._children_ports[subroot_parent_port.portNumber-1].line
+            child_line_start = subroot_in_parent_line.calcBranchPointForParent()
+            child_line_end = graphic_subroot.calcConnectionPointForChild()
+            if not self._check_line_placement(child_line, child_line_start, child_line_end):
+                return None
+
+            child_conn_point = graphic_subroot.calcConnectionPointForChild()
+            child_line_search_point = QPointF(child_conn_point.x() - GraphNode.OUTLINE_THICKNESS, child_conn_point.y())
+            child_line_candidate = self._get_line_at_point(child_line_search_point)
+            if child_line_candidate is None:
+                return None
+
+            if id(child_line) != id(child_line_candidate):
+                return None
+
+            self._lines += 1
+
+        subroot_children_line = graphic_subroot.childrenLine
+        if subroot_children_line:
+            width = 0
+
+            if len(subroot_children_line._children_ports) != len(forest_subroot.successors):
+                return None
+
+            parent_line = subroot_children_line._parent_line
+            parent_line_start = graphic_subroot.calcBranchPointForParent()
+            parent_line_end = graphic_subroot.calcBranchPointForParent()
+            if not self._check_line_placement(parent_line, parent_line_start, parent_line_end):
+                return None
+
+            subroot_parent_conn_point = graphic_subroot.calcConnectionPointForParent()
+            parent_line_search_point = QPointF(subroot_parent_conn_point.x() + GraphNode.OUTLINE_THICKNESS,
+                                               subroot_parent_conn_point.y())
+            parent_line_candidate = self._get_line_at_point(parent_line_search_point)
+            if parent_line_candidate is None:
+                return None
+
+            if id(parent_line) != id(parent_line_candidate):
+                return None
+
+            self._lines += 1
+
+            if id(graphic_subroot) != id (subroot_children_line._parent):
+                return None
+
+            graphic_children = []
+            for port in subroot_children_line._children_ports:
+                graphic_children.append(port.node)
+            initial_search_position = QPointF(subroot_parent_conn_point.x() + GraphNode.HEIGHT / 2,
+                                              subroot_parent_conn_point.y() + GraphView.HORIZONTAL_GAP)
+            if not self._check_siblings(graphic_children, forest_subroot.successors, initial_search_position):
+                return None
+
+    #         Check branch line placement by shift and there is no other items, identity of getting by link and by selection from scene
     #         Inc _lines
     #         width += len(children ports) - 1
     #     return width
 
-    # Check nodes coherency(graph node, forest node):
-    #     Check links consistency
+    def _check_nodes_coherency(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
+        if id(graph_node.data(GraphView._FOREST_NODE_DATA_KEY)) != id(forest_node):
+            return None
+        if id(forest_node.content) != id(graph_node):
+            return None
     #     Get parents
     #     Check parents' links consistency
 
@@ -578,6 +657,39 @@ class NetView(GraphView):
     #             Compare children amount
     #             for child in children:
     #                 Check are subtree coherent together
+        return True
+
+    def _get_node_at_point(self, point: QPointF):
+        node = self._scene.items(point)
+        if not isinstance(node, GraphNode):
+            return None
+        return node
+
+    def _get_line_at_point(self, point: QPointF):
+        node = self._scene.items(point)
+        if not isinstance(node, QGraphicsLineItem):
+            return None
+        return node
+
+    def _check_line_placement(self, line: QGraphicsLineItem, proper_start: QPointF, proper_end: QPointF):
+        qlinef = line.line()
+        qlinef_p1 = qlinef.p1()
+        qlinef_p2 = qlinef.p2()
+
+        if self._are_coordinates_equal(qlinef_p1.x(), proper_start.x()):
+            return False
+        if self._are_coordinates_equal(qlinef_p1.y(), proper_start.y()):
+            return False
+        if self._are_coordinates_equal(qlinef_p2.x(), proper_end.x()):
+            return False
+        if self._are_coordinates_equal(qlinef_p2.y(), proper_end.y()):
+            return False
+        return True
+
+    def _are_coordinates_equal(self, first, second):
+        EPSILON = 0.001
+        if abs(first - second) > EPSILON:
+            return False
         return True
 
 

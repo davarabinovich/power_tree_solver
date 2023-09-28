@@ -9,13 +9,13 @@ from PyQt6.QtCore import *
 
 class NodePortToParent:
     def __init__(self, multiline, portNumber):
-        self.multiline = multiline
+        self.multiline: ConnectionMultiline = multiline
         self.portNumber = portNumber
 
 class MultilinePort:
     def __init__(self, line, node):
-        self.line = line
-        self.node = node
+        self.line: QGraphicsLineItem = line
+        self.node: GraphNode = node
 
 
 class GraphNode(QGraphicsObject):
@@ -37,7 +37,7 @@ class GraphNode(QGraphicsObject):
 
     def __init__(self, widget: QWidget=None, side_widgets: list[SideWidget]=None):
         super().__init__(None)
-        self.parentPort = None
+        self.parentPort: NodePortToParent | None = None
         self.childrenLine: ConnectionMultiline | None = None
 
         proxy_widget = QGraphicsProxyWidget(self)
@@ -223,7 +223,7 @@ class ConnectionMultiline:
         super().__init__()
         self._scene: QGraphicsScene = parent.scene()
         self._parent = parent  # TODO: Use it, if it will be saved after refactoring
-        self._children_ports = []
+        self._children_ports: list[MultilinePort] = []
         self._parent_line = None
         self._branch_line = None
 

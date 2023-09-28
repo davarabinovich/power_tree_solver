@@ -344,9 +344,9 @@ class GraphView(QGraphicsView):
             self._removeSubtree(child)
 
     def _calcNewRootPosition(self) -> QPointF:
-        x = GraphView.HORIZONTAL_GAP
+        x = GraphView.HORIZONTAL_INDENT
         layer = self._forest.calc_width() + 1
-        y = GraphView.VERTICAL_GAP + (layer) * GraphView.VERTICAL_STEP
+        y = GraphView.VERTICAL_INDENT + (layer) * GraphView.VERTICAL_STEP
         return QPointF(x, y)
 
     def _updateSceneRect(self):
