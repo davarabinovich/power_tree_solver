@@ -665,9 +665,6 @@ class Forest:
             index = self._roots.index(node)
         return index
 
-    def generate_string_view(self):
-        raise NotImplementedError
-
 
     # Private part
     # TODO: Combine with Node.build_tree

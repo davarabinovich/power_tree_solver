@@ -453,13 +453,9 @@ class NetView(GraphView):
         if self._is_valid:
             self._logger.write_action(action, argv)
             is_valid = self._validate()
-            if is_valid:
-                self._logger.remove_last_structure_record()
-            else:
+            if not is_valid:
                 self._logger.mark_as_invalid()
                 self._is_valid = False
-            self._logger.write_structure(self)
-            self._logger.indent()
 
     def _validate(self):
         return True
