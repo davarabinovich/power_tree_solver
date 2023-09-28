@@ -3,6 +3,7 @@
 #       modify the net tree
 
 from __future__ import annotations
+
 from electric_net import *
 
 from graph_gui import *
@@ -26,7 +27,7 @@ class NetView(GraphView):
 
     def __init__(self, parent: QWidget=None):
         super().__init__(parent)
-        self._electric_net = None
+        self._electric_net: ElectricNet | None = None
         self._is_valid = True
         self._logger: LoggerIf | None = None
 
@@ -458,6 +459,7 @@ class NetView(GraphView):
                 self._logger.mark_as_invalid()
                 self._is_valid = False
             self._logger.write_structure(self)
+            self._logger.indent()
 
     def _validate(self):
         return True

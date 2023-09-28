@@ -32,7 +32,10 @@ class AppSupervisor(QObject):
             return False
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
 
-        self._logger.set_log_location(file_path)
+        if not self._logger.is_log_file_set():
+            self._logger.set_log_file(file_path)
+        else:
+            self._logger.save_log_file()
 
         self.needToSaveActiveNet.emit(self._active_net, file_path)
         return True
@@ -84,8 +87,8 @@ class AppSupervisor(QObject):
         self._solver.setNet(net)
         self._active_net = net
 
-        self._logger = LoggerImpl()
-        self._logger.set_log_location(file_path)
+        self._logger = LoggerImpl(file_path)
+        self._logger.set_log_file(file_path)
         self._ui.graphview.initView(self._logger)
         self._ui.graphview.setNet(net)
 
