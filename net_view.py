@@ -104,7 +104,8 @@ class NetView(GraphView):
             self._electric_net._forest.move_subtree(self._parent_to_be_deleted_forest_node, selected_forest_node)
             self._electric_net._forest.cut_node(self._parent_to_be_deleted_forest_node)
 
-            self._log()
+            self._log('Delete Ancestor Reconnecting', self._parent_to_be_deleted_forest_node.content.name,
+                      selected_forest_node.content.name)
 
             self._is_waiting_for_node_selection = False
             self._parent_to_be_deleted = None
@@ -177,7 +178,7 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(widget.changeName)
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
-        self._log()
+        self._log('Place Power Input', ui_form.nameLineEdit.text())
 
         return input
 
@@ -199,7 +200,11 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(widget.changeType)
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
-        self._log()
+        for item in source.childItems():
+            if isinstance(item, QGraphicsProxyWidget):
+                widget = item.widget()
+                source_name = widget.ui.nameLineEdit.text
+        self._log('Place Converter', ui_form.nameLineEdit.text(), source_name)
 
         return converter
 
@@ -219,7 +224,11 @@ class NetView(GraphView):
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
-        self._log()
+        for item in source.childItems():
+            if isinstance(item, QGraphicsProxyWidget):
+                widget = item.widget()
+                source_name = widget.ui.nameLineEdit.text
+        self._log('Place Consumer', ui_form.nameLineEdit.text(), source_name)
 
         return load
 
@@ -245,7 +254,7 @@ class NetView(GraphView):
         self._cur_new_power_input_number += 1
         ui_form.nameLineEdit.setText(name)
 
-        self._log()
+        self._log('Add Power Input', ui_form.nameLineEdit.text())
 
         # TODO: Do using decorators
         self.contentChanged.emit()
@@ -274,7 +283,11 @@ class NetView(GraphView):
         self._cur_new_converter_number += 1
         ui_form.nameLineEdit.setText(name)
 
-        self._log()
+        for item in source.childItems():
+            if isinstance(item, QGraphicsProxyWidget):
+                widget = item.widget()
+                source_name = widget.ui.nameLineEdit.text
+        self._log('Add Converter', ui_form.nameLineEdit.text(), source_name)
 
         self.contentChanged.emit()
 
@@ -300,7 +313,11 @@ class NetView(GraphView):
         self._cur_new_consumer_number += 1
         ui_form.nameLineEdit.setText(name)
 
-        self._log()
+        for item in source.childItems():
+            if isinstance(item, QGraphicsProxyWidget):
+                widget = item.widget()
+                source_name = widget.ui.nameLineEdit.text
+        self._log('Add Consumer', ui_form.nameLineEdit.text(), source_name)
 
         self.contentChanged.emit()
 
@@ -309,6 +326,7 @@ class NetView(GraphView):
         if forest_node.is_leaf():
             self.deleteLeaf(graph_node)
             self._electric_net._forest.delete_leaf(forest_node)
+            log_action_str = 'Delete Leaf'
 
         else:
             if len(self._electric_net._forest.roots) == 1 and \
@@ -330,9 +348,11 @@ class NetView(GraphView):
                 promote_button = mode_selection_message_box.addButton('Promote', QMessageBox.ButtonRole.NoRole)
                 mode_selection_message_box.exec()
                 if mode_selection_message_box.clickedButton() == delete_button:
+                    log_action_str = 'Delete Subtree'
                     self.deleteParent(graph_node)
                     self._electric_net._forest.delete_subtree(forest_node)
                 elif mode_selection_message_box.clickedButton() == promote_button:
+                    log_action_str = 'Delete Ancestor Promoting'
                     self.deleteParent(graph_node, graph_node.parentPort.multiline._parent)
                     self._electric_net._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
                 else:
@@ -344,6 +364,7 @@ class NetView(GraphView):
             else:
                 mode_selection_message_box.exec()
                 if mode_selection_message_box.clickedButton() == delete_button:
+                    log_action_str = 'Delete Subtree'
                     self.deleteParent(graph_node)
                     self._electric_net._forest.delete_subtree(forest_node)
                 else:
@@ -352,7 +373,7 @@ class NetView(GraphView):
                     self._parent_to_be_deleted_forest_node = forest_node
                     return
 
-        self._log()
+        self._log(log_action_str, forest_node.content.name)
 
         self.contentChanged.emit()
 
