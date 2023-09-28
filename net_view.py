@@ -203,7 +203,7 @@ class NetView(GraphView):
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
                 widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text
+                source_name = widget.ui.nameLineEdit.text()
         self._log('Place Converter', ui_form.nameLineEdit.text(), source_name)
 
         return converter
@@ -227,7 +227,7 @@ class NetView(GraphView):
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
                 widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text
+                source_name = widget.ui.nameLineEdit.text()
         self._log('Place Consumer', ui_form.nameLineEdit.text(), source_name)
 
         return load
@@ -286,7 +286,7 @@ class NetView(GraphView):
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
                 widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text
+                source_name = widget.ui.nameLineEdit.text()
         self._log('Add Converter', ui_form.nameLineEdit.text(), source_name)
 
         self.contentChanged.emit()
@@ -316,7 +316,7 @@ class NetView(GraphView):
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
                 widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text
+                source_name = widget.ui.nameLineEdit.text()
         self._log('Add Consumer', ui_form.nameLineEdit.text(), source_name)
 
         self.contentChanged.emit()
@@ -472,13 +472,63 @@ class NetView(GraphView):
             return
 
         if self._is_valid:
-            self._logger.write_action(action, argv)
+            self._logger.write_action(action, *argv)
             is_valid = self._validate()
             if not is_valid:
                 self._logger.mark_as_invalid()
                 self._is_valid = False
 
     def _validate(self):
+        In the same cycle:
+            Check is scene valid:
+                Check nodes and lines placement
+                Check consistency of links between nodes and lines
+            Check is scene coherent to graph forest
+
+        Check siblings(roots, first roor position)
+
+        Check siblings(forest siblings list, graph siblings list=None, first root position):
+            shift = first root position
+            for sibling in forest siblings list (indexing):
+                Get root by shift and check there is no other items
+                new_width = Check subtree(root)
+                Update shift by width
+                width += new_width
+
+        Check subtree(subroot):
+            width = 0
+            Take parent port
+            if is parent port:
+                Take parent port
+                Compare subroot id and id of node in child port by number taken from subroot's parent port
+                Check child line placement and there is no other items
+            Take children line
+            if is children line:
+                Check parent line placement and there is no other items
+                Compare id of subroot and childen line's parent
+                Collect children list
+                Check siblings(children list)
+                Check branch line placement by shift and there is no other items
+                width += len(children ports) - 1
+            return width
+
+
+        #
+        # Optionally check there is no extra nodes and lines, no shortage of nodes and lines
+        # Optionally check scene size
+        #
+        # Check are forests coherent together:
+        #     Compare roots amount
+        #     for root in roots:
+        #         Check are subtree coherent together:
+        #             Get electric node by widget
+        #             Check link is correct by id
+        #             Compare children amount
+        #             for child in children:
+        #                 Check are subtree coherent together
+        #
+        # Optionally validate forests
+
         return True
 
 

@@ -18,7 +18,7 @@ class LoggerImpl(LoggerIf):
         self._dump_temp_log_to_file()
 
     def write_action(self, action, *argv):
-        action_record = self._build_action_record(action. argv)
+        action_record = self._build_action_record(action, *argv)
         self._write_new_record(action_record)
 
     def mark_as_invalid(self):
@@ -38,7 +38,7 @@ class LoggerImpl(LoggerIf):
         self._log_file = log_file_full_path
 
         file = open(self._log_file, 'a')
-        file.write('\n\n\n\nSession form {date_and_time}\n\n'.format(date_and_time=datetime.now()))
+        file.write('\n\n\n\nSession from {date_and_time}\n\n'.format(date_and_time=datetime.now()))
         file.close()
 
     def _dump_temp_log_to_file(self):
@@ -50,7 +50,7 @@ class LoggerImpl(LoggerIf):
         new_record = '{action}, Name: {name}'.format(action=action, name=argv[0])
 
         # TODO: There is knowledge about NetView, but it doesn't reflect in code. It need to create explicit dependency
-        if action in ['Place Converter', 'Add Converter', 'Place Consumer', 'Place Consumer']:
+        if action in ['Place Converter', 'Add Converter', 'Place Consumer', 'Add Consumer']:
             new_record += ', Parent: {parent_name}'.format(parent_name=argv[1])
         elif action == 'Delete Ancestor Reconnecting':
             new_record += ', New Parent: {parent_name}'.format(parent_name=argv[1])
