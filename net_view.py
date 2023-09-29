@@ -484,40 +484,42 @@ class NetView(GraphView):
                 self._is_valid = False
 
     def _validate(self):
-        # TODO: Exception
-        self._nodes = 0
-        self._lines = 0
+        try:
+            self._nodes = 0
+            self._lines = 0
 
-        initial_search_position = QPointF(GraphView.HORIZONTAL_INDENT, GraphView.VERTICAL_INDENT)
-        graphic_roots = self._collect_graphic_roots(initial_search_position)
-        if graphic_roots is None:
-            return False
-        total_width = self._check_siblings(graphic_roots, self._forest.roots, initial_search_position)
-        if total_width is None:
-            return False
+            initial_search_position = QPointF(GraphView.HORIZONTAL_INDENT, GraphView.VERTICAL_INDENT)
+            graphic_roots = self._collect_graphic_roots(initial_search_position)
+            if graphic_roots is None:
+                return False
+            total_width = self._check_siblings(graphic_roots, self._forest.roots, initial_search_position)
+            if total_width is None:
+                return False
 
-        nodes_amount = self._get_all_items_of_type(GraphNode)
-        if nodes_amount != self._nodes:
-            return False
+            nodes_amount = self._get_all_items_of_type(GraphNode)
+            if nodes_amount != self._nodes:
+                return False
 
-        lines_amount = self._get_all_items_of_type(QGraphicsLineItem)
-        if lines_amount != self._lines:
-            return False
+            lines_amount = self._get_all_items_of_type(QGraphicsLineItem)
+            if lines_amount != self._lines:
+                return False
 
-        is_scene_size_correct = self._check_scene_size()
-        if not is_scene_size_correct:
-            return False
+            is_scene_size_correct = self._check_scene_size()
+            if not is_scene_size_correct:
+                return False
 
-        are_forests_coherent = self._check_forests_coherency()
-        if not are_forests_coherent:
-            return False
+            are_forests_coherent = self._check_forests_coherency()
+            if not are_forests_coherent:
+                return False
 
-        is_graphic_forest_valid = self._forest.is_forest_valid()
-        if not is_graphic_forest_valid:
-            return False
+            is_graphic_forest_valid = self._forest.is_forest_valid()
+            if not is_graphic_forest_valid:
+                return False
 
-        is_electric_forest_valid = self._electric_net._forest.is_forest_valid()
-        if not is_electric_forest_valid:
+            is_electric_forest_valid = self._electric_net._forest.is_forest_valid()
+            if not is_electric_forest_valid:
+                return False
+        except:
             return False
 
         return True
