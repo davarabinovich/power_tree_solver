@@ -655,15 +655,41 @@ class NetView(GraphView):
         return True
 
     def _check_forests_coherency(self):
-    #     Compare roots amount
-    #     for root in roots:
-    #         Check are subtree coherent together:
-    #             Get electric node by widget
-    #             Check link is correct by id
-    #             Compare children amount
-    #             for child in children:
-    #                 Check are subtree coherent together
+        graphic_forest = self._forest
+        electric_forest = self._electric_net._forest
+        if len(graphic_forest.roots) != len(electric_forest.roots):
+            return False
+
+        for index in range(len(graphic_forest.roots)):
+            if not self._check_subtrees_coherency(graphic_forest.roots[index], electric_forest.roots[index]):
+                return False
         return True
+
+    def _check_subtrees_coherency(self, graphic_subroot: Forest.ForestNode, electric_subroot: Forest.ForestNode):
+        graphic_subroot_graph_node = graphic_subroot.content
+        subroot_widget = self._get_widget(graphic_subroot_graph_node)
+        electric_subroot_candidate = subroot_widget._electric_node
+
+        if id(electric_subroot) != id (electric_subroot_candidate):
+            return False
+        if len(graphic_subroot.successors) != len(electric_subroot.successors):
+            return False
+        for index in range(len(graphic_subroot.successors)):
+            if not self._check_subtrees_coherency(graphic_subroot.successors[index],
+                                                  electric_subroot.successors[index]):
+                return False
+        return True
+
+    def _get_widget(self, node: GraphNode) -> SourceWidget | ConverterWidget | LoadWidget | None:
+        child_items = node.childItems()
+        for item in child_items:
+            if isinstance(item, SourceWidget):
+                return item
+            if isinstance(item, ConverterWidget):
+                return item
+            if isinstance(item, LoadWidget):
+                return item
+        return None
 
     def _get_item_at_point_by_type(self, point: QPointF, desired_type):
         item = self._scene.items(point)
