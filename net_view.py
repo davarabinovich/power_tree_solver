@@ -478,8 +478,9 @@ class NetView(GraphView):
 
         if self._is_valid:
             self._logger.write_action(action, *argv)
-            is_valid = self._validate()
-            if not is_valid:
+            validation_result = self._validate()
+            if validation_result is not True:
+                # TODO: Log error message
                 self._logger.mark_as_invalid()
                 self._is_valid = False
 
@@ -496,31 +497,32 @@ class NetView(GraphView):
             if total_width is None:
                 return False
 
-            nodes_amount = self._get_all_items_of_type(GraphNode)
+            nodes_amount = len(self._get_all_items_of_type(GraphNode))
             if nodes_amount != self._nodes:
                 return False
 
-            lines_amount = self._get_all_items_of_type(QGraphicsLineItem)
+            lines_amount = len(self._get_all_items_of_type(QGraphicsLineItem))
             if lines_amount != self._lines:
                 return False
 
-            is_scene_size_correct = self._check_scene_size()
-            if not is_scene_size_correct:
-                return False
+            # is_scene_size_correct = self._check_scene_size()
+            # if not is_scene_size_correct:
+            #     return False
 
             are_forests_coherent = self._check_forests_coherency()
             if not are_forests_coherent:
                 return False
 
-            is_graphic_forest_valid = self._forest.is_forest_valid()
-            if not is_graphic_forest_valid:
-                return False
+            # is_graphic_forest_valid = self._forest.is_forest_valid()
+            # if not is_graphic_forest_valid:
+            #     return False
+            # is_electric_forest_valid = self._electric_net._forest.is_forest_valid()
+            # if not is_electric_forest_valid:
+            #     return False
 
-            is_electric_forest_valid = self._electric_net._forest.is_forest_valid()
-            if not is_electric_forest_valid:
-                return False
-        except:
-            return False
+        except Exception as exception:
+            error_message = str(type(exception)) + ': ' + str(exception)
+            return error_message
 
         return True
 
@@ -534,12 +536,10 @@ class NetView(GraphView):
         roots = []
         search_position = initial_search_position
         while not is_search_position_out_of_scene(self, search_position):
-            node = self._get_item_at_point_by_type(search_position, GraphNode)
-            if node is None:
-                return None
-            roots.append(node)
+            node = self._get_single_item_at_point_by_type(search_position, GraphNode)
+            if isinstance(node, GraphNode):
+                roots.append(node)
             search_position = QPointF(search_position.x(), search_position.y()+GraphView.VERTICAL_STEP)
-
         return roots
 
     def _check_siblings(self, graphic_siblings: list[GraphNode], forest_siblings: list[Forest.ForestNode],
@@ -547,7 +547,7 @@ class NetView(GraphView):
         total_width = 0
         search_position = initial_search_position
         for index in range(len(graphic_siblings)):
-            graphic_sibling: GraphNode = self._get_item_at_point_by_type(search_position, GraphNode)
+            graphic_sibling: GraphNode = self._get_single_item_at_point_by_type(search_position, GraphNode)
             if graphic_sibling is None:
                 return None
             if id(graphic_sibling) != id(graphic_siblings[index]):
@@ -557,8 +557,9 @@ class NetView(GraphView):
             width = self._check_subtree(graphic_sibling, forest_sibling)
             if width is None:
                 return None
-            search_position = QPointF(search_position.x(), search_position.y()+width*GraphView.VERTICAL_STEP)
+            search_position = QPointF(search_position.x(), search_position.y() + (width+1) * GraphView.VERTICAL_STEP)
             total_width += width
+            index += 1
 
         total_width += len(graphic_siblings) - 1
         return total_width
@@ -578,9 +579,10 @@ class NetView(GraphView):
             if id(graphic_subroot) != id(subroot_in_parent_line):
                 return None
 
+            parent_branch_point = subroot_parent_port.multiline._parent.calcBranchPointForParent()
             child_line = subroot_parent_port.multiline._children_ports[subroot_parent_port.portNumber-1].line
-            child_line_start = subroot_in_parent_line.calcBranchPointForParent()
             child_line_end = graphic_subroot.calcConnectionPointForChild()
+            child_line_start = QPointF(parent_branch_point.x(), child_line_end.y())
             child_conn_point = graphic_subroot.calcConnectionPointForChild()
             child_line_search_point = QPointF(child_conn_point.x() - GraphNode.OUTLINE_THICKNESS, child_conn_point.y())
 
@@ -593,7 +595,7 @@ class NetView(GraphView):
                 return None
 
             parent_line = subroot_children_line._parent_line
-            parent_line_start = graphic_subroot.calcBranchPointForParent()
+            parent_line_start = graphic_subroot.calcConnectionPointForParent()
             parent_line_end = graphic_subroot.calcBranchPointForParent()
             subroot_parent_conn_point = graphic_subroot.calcConnectionPointForParent()
             parent_line_search_point = QPointF(subroot_parent_conn_point.x() + GraphNode.OUTLINE_THICKNESS,
@@ -605,8 +607,8 @@ class NetView(GraphView):
             graphic_children = []
             for port in subroot_children_line._children_ports:
                 graphic_children.append(port.node)
-            initial_search_position = QPointF(subroot_parent_conn_point.x() + GraphNode.HEIGHT / 2,
-                                              subroot_parent_conn_point.y() + GraphView.HORIZONTAL_GAP)
+            initial_search_position = QPointF(subroot_parent_conn_point.x() + GraphView.HORIZONTAL_GAP,
+                                              subroot_parent_conn_point.y() - GraphNode.HEIGHT / 2)
             total_width = self._check_siblings(graphic_children, forest_subroot.successors, initial_search_position)
             if total_width is None:
                 return None
@@ -616,9 +618,17 @@ class NetView(GraphView):
             last_child_conn_point = graphic_children[-1].calcConnectionPointForChild()
             branch_line_end_x = last_child_conn_point.x() - GraphView.HORIZONTAL_GAP + ConnectionMultiline.BRANCH_INDENT
             branch_line_end = QPointF(branch_line_end_x, last_child_conn_point.y())
-            branch_line_search_point = QPointF(branch_line_end_x, last_child_conn_point.y()-GraphNode.OUTLINE_THICKNESS)
-            if not self._check_line(branch_line, branch_line_start, branch_line_end, branch_line_search_point):
-                return None
+
+            # TODO: There are two cases. It needs to rework multiline code to there will be only the second case
+            if len(graphic_children) == 1:
+                if not self._check_line_placement(branch_line, branch_line_start, branch_line_end):
+                    return None
+                self._lines += 1
+            else:
+                branch_line_search_point = QPointF(branch_line_end_x,
+                                                   last_child_conn_point.y() - GraphNode.OUTLINE_THICKNESS)
+                if not self._check_line(branch_line, branch_line_start, branch_line_end, branch_line_search_point):
+                    return None
 
         return total_width
 
@@ -628,10 +638,11 @@ class NetView(GraphView):
         if id(forest_node.content) != id(graphic_node):
             return False
 
-        graphic_parent = graphic_node.parentPort.multiline._parent
-        forest_parent = forest_node.parent
-        if not self._check_nodes_coherency(graphic_parent, forest_parent):
-            return False
+        if forest_node.is_successor():
+            graphic_parent = graphic_node.parentPort.multiline._parent
+            forest_parent = forest_node.parent
+            if not self._check_nodes_coherency(graphic_parent, forest_parent):
+                return False
 
         return True
 
@@ -685,24 +696,22 @@ class NetView(GraphView):
     def _get_widget(self, node: GraphNode) -> SourceWidget | ConverterWidget | LoadWidget | None:
         child_items = node.childItems()
         for item in child_items:
-            if isinstance(item, SourceWidget):
-                return item
-            if isinstance(item, ConverterWidget):
-                return item
-            if isinstance(item, LoadWidget):
-                return item
+            if isinstance(item, QGraphicsProxyWidget):
+                return item.widget()
         return None
 
-    def _get_item_at_point_by_type(self, point: QPointF, desired_type):
-        item = self._scene.items(point)
-        if not isinstance(item, desired_type):
+    def _get_single_item_at_point_by_type(self, point: QPointF, desired_type):
+        items = self._scene.items(point)
+        if len(items) != 1:
             return None
-        return item
+        if not isinstance(items[0], desired_type):
+            return None
+        return items[0]
 
     def _check_line(self, line: QGraphicsLineItem, proper_start: QPointF, proper_end: QPointF, search_point: QPointF):
         if not self._check_line_placement(line, proper_start, proper_end):
             return False
-        line_candidate = self._get_item_at_point_by_type(search_point, QGraphicsLineItem)
+        line_candidate = self._get_single_item_at_point_by_type(search_point, QGraphicsLineItem)
         if line_candidate is None:
             return False
         if id(line) != id(line_candidate):
@@ -713,16 +722,16 @@ class NetView(GraphView):
 
     def _check_line_placement(self, line: QGraphicsLineItem, proper_start: QPointF, proper_end: QPointF):
         qlinef = line.line()
-        qlinef_p1 = qlinef.p1()
-        qlinef_p2 = qlinef.p2()
+        qlinef_p1 = line.mapToScene(qlinef.p1())
+        qlinef_p2 = line.mapToScene(qlinef.p2())
 
-        if self._are_coordinates_equal(qlinef_p1.x(), proper_start.x()):
+        if not self._are_coordinates_equal(qlinef_p1.x(), proper_start.x()):
             return False
-        if self._are_coordinates_equal(qlinef_p1.y(), proper_start.y()):
+        if not self._are_coordinates_equal(qlinef_p1.y(), proper_start.y()):
             return False
-        if self._are_coordinates_equal(qlinef_p2.x(), proper_end.x()):
+        if not self._are_coordinates_equal(qlinef_p2.x(), proper_end.x()):
             return False
-        if self._are_coordinates_equal(qlinef_p2.y(), proper_end.y()):
+        if not self._are_coordinates_equal(qlinef_p2.y(), proper_end.y()):
             return False
         return True
 

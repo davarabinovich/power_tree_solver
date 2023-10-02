@@ -62,8 +62,11 @@ class GraphNode(QGraphicsObject):
             self._width = GraphNode.WIDTH
 
     def boundingRect(self) -> QRectF:
+        # TODO: Clean from _width
         top_left_point = QPointF(-GraphNode.HALF_OUTLINE_THICKNESS, -GraphNode.HALF_OUTLINE_THICKNESS)
-        bottom_right_point = QPointF(self._width, GraphNode.HEIGHT+GraphNode.HALF_OUTLINE_THICKNESS)
+        # bottom_right_point = QPointF(self._width, GraphNode.HEIGHT+GraphNode.HALF_OUTLINE_THICKNESS)
+        bottom_right_point = QPointF(GraphNode.WIDTH + GraphNode.HALF_OUTLINE_THICKNESS,
+                                     GraphNode.HEIGHT + GraphNode.HALF_OUTLINE_THICKNESS)
         rect = QRectF(top_left_point, bottom_right_point)
         return rect
 
