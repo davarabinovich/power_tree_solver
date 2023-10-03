@@ -130,16 +130,25 @@ class MainWindow(QMainWindow):
             a0.accept()
             return
 
-        pressed_button = QMessageBox.question(self,
-                                              'The net was probably changed', 'Do you want to save changes in the net?')
-        if pressed_button == QMessageBox.StandardButton.Yes:
+        file_saving_message_box = QMessageBox(QMessageBox.Icon.Warning, 'The net was probably changed',
+                                              'Do you want to save changes in the net?', parent=self)
+        save_button = file_saving_message_box.addButton('Yes', QMessageBox.ButtonRole.YesRole)
+        not_save_button = file_saving_message_box.addButton('No', QMessageBox.ButtonRole.DestructiveRole)
+        close_button = file_saving_message_box.addButton('', QMessageBox.ButtonRole.RejectRole)
+        close_button.hide()
+        file_saving_message_box.exec()
+
+        pressed_button = file_saving_message_box.clickedButton()
+        if pressed_button == save_button:
             is_saved = self._sv.receiveSaveAsAction()
             if is_saved:
                 a0.accept()
             else:
                 a0.ignore()
-        else:
+        elif pressed_button == not_save_button:
             a0.accept()
+        else:
+            a0.ignore()
 
 def main():
     app = QApplication(sys.argv)
