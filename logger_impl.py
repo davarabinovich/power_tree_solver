@@ -6,6 +6,8 @@ from net_view import *
 
 class LoggerImpl(LoggerIf):
     # Public interface
+    class NoLogFile(Exception): pass
+
     def __init__(self, file=None):
         super().__init__()
         self._log_file = None
@@ -20,6 +22,17 @@ class LoggerImpl(LoggerIf):
     def write_action(self, action, *argv):
         action_record = self._build_action_record(action, *argv)
         self._write_new_record(action_record)
+
+    def log_loading(self, file_path):
+        file = open(file_path, 'r')
+        file_content = file.read()
+        file.close()
+
+        if self._log_file is None:
+            raise LoggerImpl.NoLogFile
+
+        file_content += '\n\n'
+        self._write_new_record(file_content)
 
     def mark_as_invalid(self):
         invalidate_record = self._build_mark_as_invalid_record()

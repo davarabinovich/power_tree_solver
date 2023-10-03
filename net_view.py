@@ -183,8 +183,6 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(widget.changeName)
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
-        self._log('Place Power Input', ui_form.nameLineEdit.text())
-
         return input
 
     def placeConverter(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
@@ -205,12 +203,6 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(widget.changeType)
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
-        for item in source.childItems():
-            if isinstance(item, QGraphicsProxyWidget):
-                widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text()
-        self._log('Place Converter', ui_form.nameLineEdit.text(), source_name)
-
         return converter
 
     def placeLoad(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
@@ -228,12 +220,6 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
-
-        for item in source.childItems():
-            if isinstance(item, QGraphicsProxyWidget):
-                widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text()
-        self._log('Place Consumer', ui_form.nameLineEdit.text(), source_name)
 
         return load
 

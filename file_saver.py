@@ -85,6 +85,7 @@ class FileLoader(QObject):
         self._file = open(path, 'r')
         self._net = ElectricNet()
         self._build_net_by_file(self._file)
+        self._file.close()
         return self._net
 
     def _build_net_by_file(self, file):
