@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 from math import *
+import typing
 
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import *
@@ -8,9 +9,9 @@ from PyQt6.QtCore import *
 
 
 class NodePortToParent:
-    def __init__(self, multiline, portNumber):
+    def __init__(self, multiline, port_number):
         self.multiline: ConnectionMultiline = multiline
-        self.portNumber = portNumber
+        self.port_number = port_number
 
 class MultilinePort:
     def __init__(self, line, node):
@@ -144,7 +145,7 @@ class SideWidget(QGraphicsWidget):
         width = SideWidget.DIAMETER + SideWidget.TEXT_HORIZONTAL_GAP + self._label.boundingRect().width()
         return width
 
-    def mousePressEvent(self, event, QGraphicsSceneMouseEvent=None):
+    def mousePressEvent(self, event: typing.Optional['QGraphicsSceneMouseEvent']) -> None:
         self.clicked.emit(self)
 
     clicked = pyqtSignal('PyQt_PyObject', name='clicked')
@@ -233,7 +234,7 @@ class ConnectionMultiline:
         # TODO: Try to implement lines indexing via an iterable data structure of 'dense set' with random access
         #       based on binary search
         parent.childrenLine = self
-        child.parentPort = NodePortToParent(multiline=self, portNumber=1)
+        child.parentPort = NodePortToParent(multiline=self, port_number=1)
 
         parent_connection_point = parent.calcConnectionPointForParent()
         branch_point = QPointF(parent_connection_point.x() + ConnectionMultiline.BRANCH_INDENT,
@@ -245,7 +246,7 @@ class ConnectionMultiline:
 
     def addChild(self, child: GraphNode):
         children_number = self._getChildrenNumber()
-        child.parentPort = NodePortToParent(multiline=self, portNumber=children_number + 1)
+        child.parentPort = NodePortToParent(multiline=self, port_number=children_number + 1)
         top_branch_point = self._parent_line.line().p2()
         bottom_branch_point = QPointF(top_branch_point.x(), child.calcConnectionPointForChild().y())
 
@@ -255,7 +256,7 @@ class ConnectionMultiline:
         self._addChildLine(bottom_branch_point, child.calcConnectionPointForChild(), child)
 
     def insertChild(self, child: GraphNode, port_number):
-        child.parentPort = NodePortToParent(multiline=self, portNumber=port_number)
+        child.parentPort = NodePortToParent(multiline=self, port_number=port_number)
 
         top_branch_point = self._parent_line.line().p2()
         child_connection_point = child.calcConnectionPointForChild()
@@ -271,7 +272,7 @@ class ConnectionMultiline:
 
         for index in range(port_number-1, len(self._children_ports)):
             child_parent_port = self._children_ports[index].node.parentPort
-            child_parent_port.portNumber = index + 1
+            child_parent_port.port_number = index + 1
 
         return
 
@@ -284,7 +285,7 @@ class ConnectionMultiline:
         self._children_ports.pop(port_number-1)
         for port in self._children_ports[port_number-1:]:
             child = port.node
-            child.parentPort.portNumber = child.parentPort.portNumber - 1
+            child.parentPort.port_number = child.parentPort.port_number - 1
 
         if port_number == initial_children_number:
             if initial_children_number > 1:
@@ -298,13 +299,13 @@ class ConnectionMultiline:
                 self._parent.childrenLine = None
 
     # TODO: Annotate all complex types
-    def stretch(self, portNumber, delta_y):
+    def stretch(self, port_number, delta_y):
         branch_qlinef = self._branch_line.line()
         new_bottom_branch_point = QPointF(branch_qlinef.p2().x(), branch_qlinef.p2().y() + delta_y)
         branch_qlinef.setP2(new_bottom_branch_point)
         self._branch_line.setLine(branch_qlinef)
 
-        for port in self._children_ports[portNumber-1:]:
+        for port in self._children_ports[port_number-1:]:
             child_line_p1 = port.line.line().p1()
             child_line_p2 = port.line.line().p2()
             port.line.setLine(child_line_p1.x(), child_line_p1.y() + delta_y,

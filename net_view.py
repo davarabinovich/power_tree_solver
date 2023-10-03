@@ -59,7 +59,7 @@ class NetView(GraphView):
         self.init()
         self._logger = logger
 
-        cross = self.addCross(NetView.CROSS_POSITION)
+        cross = self.add_cross(NetView.CROSS_POSITION)
         cross.clicked.connect(self._addInput)
 
         self._is_waiting_for_node_selection = False
@@ -105,7 +105,7 @@ class NetView(GraphView):
                 return
 
 
-            self.deleteParent(self._parent_to_be_deleted, selected_node)
+            self.delete_parent(self._parent_to_be_deleted, selected_node)
             self._electric_net._forest.move_subtree(self._parent_to_be_deleted_forest_node, selected_forest_node)
             self._electric_net._forest.cut_node(self._parent_to_be_deleted_forest_node)
 
@@ -170,7 +170,7 @@ class NetView(GraphView):
     def placeInput(self, node: Forest.ForestNode) -> GraphNode:
         widget, ui_form = NetView._prepareSourceWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
-        input = self.addRoot(widget, side_widgets)
+        input = self.add_root(widget, side_widgets)
         widget.electric_node = node
 
         input.clicked.connect(self.nodeSelected)
@@ -188,7 +188,7 @@ class NetView(GraphView):
     def placeConverter(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
         widget, ui_form = NetView._prepareConverterWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
-        converter = self.addChild(source, widget, side_widgets)
+        converter = self.add_child(source, widget, side_widgets)
         widget.electric_node = node
 
         converter.clicked.connect(self.nodeSelected)
@@ -208,7 +208,7 @@ class NetView(GraphView):
     def placeLoad(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
         widget, ui_form = NetView._prepareLoadWidget()
         side_widgets = NetView._prepareConsumerSideWidgets()
-        load = self.addChild(source, widget, side_widgets)
+        load = self.add_child(source, widget, side_widgets)
         widget.electric_node = node
 
         load.clicked.connect(self.nodeSelected)
@@ -227,7 +227,7 @@ class NetView(GraphView):
     def _addInput(self):
         widget, ui_form = NetView._prepareSourceWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
-        input = self.addRoot(widget, side_widgets)
+        input = self.add_root(widget, side_widgets)
         new_input = self._electric_net.create_input()
         widget.electric_node = new_input
 
@@ -254,7 +254,7 @@ class NetView(GraphView):
     def _addConverter(self, source: GraphNode, parent: Forest.ForestNode):
         widget, ui_form = NetView._prepareConverterWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
-        converter = self.addChild(source, widget, side_widgets)
+        converter = self.add_child(source, widget, side_widgets)
         new_converter = self._electric_net.add_converter(parent)
         widget.electric_node = new_converter
 
@@ -286,7 +286,7 @@ class NetView(GraphView):
     def _addLoad(self, source: GraphNode, parent: Forest.ForestNode):
         widget, ui_form = NetView._prepareLoadWidget()
         side_widgets = NetView._prepareConsumerSideWidgets()
-        consumer = self.addChild(source, widget, side_widgets)
+        consumer = self.add_child(source, widget, side_widgets)
         new_load = self._electric_net.add_load(parent)
         widget.electric_node = new_load
 
@@ -315,7 +315,7 @@ class NetView(GraphView):
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _deleteNode(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
         if forest_node.is_leaf():
-            self.deleteLeaf(graph_node)
+            self.delete_leaf(graph_node)
             self._electric_net._forest.delete_leaf(forest_node)
             log_action_str = 'Delete Leaf'
 
@@ -325,7 +325,7 @@ class NetView(GraphView):
                 button = QMessageBox.question(self, 'There is no node to be a new parent',
                                                     'Are you sure, that you want to fully clear the net?')
                 if button == QMessageBox.StandardButton.Yes:
-                    self.deleteParent(graph_node)
+                    self.delete_parent(graph_node)
                     self._electric_net._forest.delete_subtree(forest_node)
                 return
 
@@ -344,11 +344,11 @@ class NetView(GraphView):
 
                 if mode_selection_message_box.clickedButton() == delete_button:
                     log_action_str = 'Delete Subtree'
-                    self.deleteParent(graph_node)
+                    self.delete_parent(graph_node)
                     self._electric_net._forest.delete_subtree(forest_node)
                 elif mode_selection_message_box.clickedButton() == promote_button:
                     log_action_str = 'Delete Ancestor Promoting'
-                    self.deleteParent(graph_node, graph_node.parentPort.multiline._parent)
+                    self.delete_parent(graph_node, graph_node.parentPort.multiline._parent)
                     self._electric_net._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
                 elif mode_selection_message_box.clickedButton() == reconnect_button:
                     self._is_waiting_for_node_selection = True
@@ -365,7 +365,7 @@ class NetView(GraphView):
 
                 if mode_selection_message_box.clickedButton() == delete_button:
                     log_action_str = 'Delete Subtree'
-                    self.deleteParent(graph_node)
+                    self.delete_parent(graph_node)
                     self._electric_net._forest.delete_subtree(forest_node)
                 elif mode_selection_message_box.clickedButton() == reconnect_button:
                     self._is_waiting_for_node_selection = True
@@ -572,12 +572,12 @@ class NetView(GraphView):
         subroot_parent_port = graphic_subroot.parentPort
         if subroot_parent_port:
             subroot_in_parent_line = subroot_parent_port. \
-                multiline._children_ports[subroot_parent_port.portNumber-1].node
+                multiline._children_ports[subroot_parent_port.port_number - 1].node
             if id(graphic_subroot) != id(subroot_in_parent_line):
                 return None
 
             parent_branch_point = subroot_parent_port.multiline._parent.calcBranchPointForParent()
-            child_line = subroot_parent_port.multiline._children_ports[subroot_parent_port.portNumber-1].line
+            child_line = subroot_parent_port.multiline._children_ports[subroot_parent_port.port_number - 1].line
             child_line_end = graphic_subroot.calcConnectionPointForChild()
             child_line_start = QPointF(parent_branch_point.x(), child_line_end.y())
             child_conn_point = graphic_subroot.calcConnectionPointForChild()

@@ -5,8 +5,6 @@
 #     - use different view updating policy (method, see GraphicsView reference, BSP tree)
 
 from PyQt6 import QtCore
-
-from settings import *
 from tree import *
 from graph_gui_int import *
 
@@ -50,41 +48,41 @@ class GraphView(QGraphicsView):
         self._scene.setSceneRect(scene_rect)
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop | QtCore.Qt.AlignmentFlag.AlignLeft)
 
-    def addCross(self, position: QPointF) -> PlusIcon:
+    def add_cross(self, position: QPointF) -> PlusIcon:
         cross = PlusIcon(None, 'Add Power Input')
         self._scene.addItem(cross)
         cross.moveBy(position.x(), position.y())
         return cross
 
-    def addRoot(self, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
-        position = self._calcNewRootPosition()
-        root = self._createNodeOnScene(position, widget, side_widgets)
+    def add_root(self, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
+        position = self._calc_new_root_position()
+        root = self._create_node_on_scene(position, widget, side_widgets)
         forest_node = self._forest.create_root()
-        self._linkGraphAndForestNodes(root, forest_node)
-        self._updateSceneRect()
+        self._link_graph_and_forest_nodes(root, forest_node)
+        self._update_scene_rect()
 
         return root
 
     # TODO: replace QGraphicsItem with GraphNode
     # TODO: try to convert GraphNode to Tree::Node implicitly (to send parent to add_leaf instead parent_forest_node;
     #       it also requires to change Forest methods' signatures - not internal _ForestNode, but visible for user Node
-    def addChild(self, parent: GraphNode, widget: QWidget=None, side_widgets: list[SideWidget]=None) -> GraphNode:
+    def add_child(self, parent: GraphNode, widget: QWidget=None, side_widgets: list[SideWidget]=None) -> GraphNode:
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if len(parent_forest_node.successors) > 0:
             furthest_parent_leaf = self._forest.find_furthest_leaf(parent_forest_node)
-            self._moveNodesBelow(furthest_parent_leaf)
+            self._move_nodes_below(furthest_parent_leaf)
 
-        position = GraphView._calcNewChildPosition(parent)
-        child = self._createNodeOnScene(position, widget, side_widgets)
+        position = GraphView._calc_new_child_position(parent)
+        child = self._create_node_on_scene(position, widget, side_widgets)
         forest_node = self._forest.add_leaf(parent_forest_node)
-        self._linkGraphAndForestNodes(child, forest_node)
-        self._drawConnection(parent, child)
+        self._link_graph_and_forest_nodes(child, forest_node)
+        self._draw_connection(parent, child)
 
-        self._updateSceneRect()
+        self._update_scene_rect()
 
         return child
 
-    def deleteLeaf(self, graph_node: GraphNode):
+    def delete_leaf(self, graph_node: GraphNode):
         forest_node: Forest.ForestNode = graph_node.data(GraphView._FOREST_NODE_DATA_KEY)
         if forest_node.is_parent():
             raise GraphView.DeletingParentAsLeaf
@@ -97,23 +95,23 @@ class GraphView(QGraphicsView):
             is_moving_above_needed = False
 
         if is_moving_above_needed:
-            self._moveNodesAbove(forest_node)
+            self._move_nodes_above(forest_node)
 
         if forest_node.is_successor():
-            graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
+            graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.port_number)
         self._forest.delete_leaf(forest_node)
         self._scene.removeItem(graph_node)
 
-        self._updateSceneRect()
+        self._update_scene_rect()
 
-    def deleteParent(self, graph_node: GraphNode, new_parent: GraphNode=None):
-        def is_promotion_needed(forest_node: Node, new_parent: GraphNode):
+    def delete_parent(self, graph_node: GraphNode, new_parent: GraphNode=None):
+        def is_promotion_needed(node: Node, new_parent_graph_node: GraphNode):
             result = True
-            if new_parent is None:
+            if new_parent_graph_node is None:
                 result = False
-            elif forest_node.is_root():
+            elif node.is_root():
                 result = False
-            elif id(forest_node.parent) != id(new_parent.data(GraphView._FOREST_NODE_DATA_KEY)):
+            elif id(node.parent) != id(new_parent_graph_node.data(GraphView._FOREST_NODE_DATA_KEY)):
                 result = False
             return result
 
@@ -130,23 +128,23 @@ class GraphView(QGraphicsView):
                 distance = subtree_width + 1
 
             for i in range(distance):
-                self._moveNodesAbove(furthest_leaf)
-            self._removeSubtree(forest_node)
+                self._move_nodes_above(furthest_leaf)
+            self._remove_subtree(forest_node)
             self._forest.delete_subtree(forest_node)
 
         elif is_promotion_needed(forest_node, new_parent):
             children = forest_node.successors
             for child in children:
-                self._moveSubtreeLeft(child)
+                self._move_subtree_left(child)
 
             parent_multiline = new_parent.childrenLine
-            parent_multiline.deleteChild(graph_node.parentPort.portNumber)
+            parent_multiline.deleteChild(graph_node.parentPort.port_number)
 
             if len(parent_multiline._children_ports) > 0:
                 for index in reversed(range(len(children))):
                     graph_node.childrenLine.deleteChild(index+1)
                 for index in range(len(children)):
-                    parent_multiline.insertChild(children[index].content, graph_node.parentPort.portNumber+index)
+                    parent_multiline.insertChild(children[index].content, graph_node.parentPort.port_number + index)
             else:
                 for index in reversed(range(len(children))):
                     graph_node.childrenLine.deleteChild(index+1)
@@ -171,7 +169,7 @@ class GraphView(QGraphicsView):
             else:
                 distance = subtree_width + 1
             for i in range(distance):
-                self._moveNodesAbove(furthest_leaf)
+                self._move_nodes_above(furthest_leaf)
 
             delta_x = self._forest.calc_distance(forest_node, new_parent_forest_node)[0]
             new_parent_furthest_leaf = self._forest.find_furthest_leaf(new_parent_forest_node)
@@ -192,14 +190,14 @@ class GraphView(QGraphicsView):
                     break
 
             for i in range(len(children)):
-                self._moveNodesBelow(top_moving_node, GraphView.VERTICAL_STEP)
+                self._move_nodes_below(top_moving_node, GraphView.VERTICAL_STEP)
             for child in children:
-                self._moveSubtreeLeft(child, delta_x * GraphView.HORIZONTAL_STEP)
-                self._moveSubtreeBelow(child, -delta_y * GraphView.VERTICAL_STEP)
+                self._move_subtree_left(child, delta_x * GraphView.HORIZONTAL_STEP)
+                self._move_subtree_below(child, -delta_y * GraphView.VERTICAL_STEP)
 
             if forest_node.is_successor():
                 parent_multiline = forest_node.parent.content.childrenLine
-                parent_multiline.deleteChild(graph_node.parentPort.portNumber)
+                parent_multiline.deleteChild(graph_node.parentPort.port_number)
 
             for index in reversed(range(len(children))):
                 graph_node.childrenLine.deleteChild(index + 1)
@@ -229,13 +227,13 @@ class GraphView(QGraphicsView):
 
 
     @staticmethod
-    def _linkGraphAndForestNodes(graph_node: GraphNode, forest_node: Node):
+    def _link_graph_and_forest_nodes(graph_node: GraphNode, forest_node: Node):
         forest_node.content = graph_node
         graph_node.setData(GraphView._FOREST_NODE_DATA_KEY, forest_node)
 
     @staticmethod
-    def _calcNewChildPosition(parent: GraphNode) -> QPointF:
-        x = parent.pos().x() +  GraphView.HORIZONTAL_STEP
+    def _calc_new_child_position(parent: GraphNode) -> QPointF:
+        x = parent.pos().x() + GraphView.HORIZONTAL_STEP
 
         parent_forest_node = parent.data(GraphView._FOREST_NODE_DATA_KEY)
         if parent_forest_node.is_leaf():
@@ -249,7 +247,7 @@ class GraphView(QGraphicsView):
 
 
     # TODO: Need to tune node's dimensions, boundingRect
-    def _createNodeOnScene(self, position: QPointF, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
+    def _create_node_on_scene(self, position: QPointF, widget: QWidget=None, side_widgets: list=None) -> GraphNode:
         graph_node = GraphNode(widget, side_widgets)
         graph_node.sideWidgetClicked.connect(self.nodeSideWidgetClicked)
         self._scene.addItem(graph_node)
@@ -257,99 +255,100 @@ class GraphView(QGraphicsView):
 
         return graph_node
 
-    def _drawConnection(self, parent: GraphNode, child: GraphNode):
+    @staticmethod
+    def _draw_connection(parent: GraphNode, child: GraphNode):
         if parent.childrenLine is None:
-            multiline = ConnectionMultiline(parent, child)
+            ConnectionMultiline(parent, child)
         else:
             parent.childrenLine.addChild(child)
 
-    def _moveNodesBelow(self, node: Node, delta_y=VERTICAL_STEP):
+    def _move_nodes_below(self, node: Node, delta_y=VERTICAL_STEP):
         if node is None:
             return
 
         node_forest_root = self._forest.find_root(node)
         root_index = self._forest.roots.index(node_forest_root)
         for root in self._forest.roots[root_index+1:]:
-            self._moveSubtreeBelow(root, delta_y)
+            self._move_subtree_below(root, delta_y)
 
         ancestors = self._forest.get_path_to_root(node)
         for ancestor in ancestors:
             ancestor_index = ancestor.index_by_parent()
             ancestor_younger_siblings = ancestor.parent.successors[ancestor_index+1:]
             for ancestor_sibling in ancestor_younger_siblings:
-                self._moveSubtreeBelow(ancestor_sibling, delta_y)
+                self._move_subtree_below(ancestor_sibling, delta_y)
 
             if len(ancestor_younger_siblings) > 0:
-                top_moving_port = ancestor_younger_siblings[0].content.parentPort.portNumber
+                top_moving_port = ancestor_younger_siblings[0].content.parentPort.port_number
                 ancestor_parent_multiline = ancestor.content.parentPort.multiline
                 ancestor_parent_multiline.stretch(top_moving_port, delta_y)
 
-    def _moveNodesAbove(self, node: Node):
+    def _move_nodes_above(self, node: Node):
         siblings = self._forest.get_siblings_from(node)[1:]
         for sibling in siblings:
-            self._moveSubtreeAbove(sibling)
+            self._move_subtree_above(sibling)
         if len(siblings) > 0:
             parent_multiline = node.content.parentPort.multiline
-            parent_multiline.stretch(siblings[0].content.parentPort.portNumber, -GraphView.VERTICAL_STEP)
+            parent_multiline.stretch(siblings[0].content.parentPort.port_number, -GraphView.VERTICAL_STEP)
 
         ancestors = self._forest.get_path_to_root(node)
         for ancestor in ancestors:
             ancestor_index = ancestor.index_by_parent()
             ancestor_younger_siblings = ancestor.parent.successors[ancestor_index+1:]
             for ancestor_sibling in ancestor_younger_siblings:
-                self._moveSubtreeAbove(ancestor_sibling)
+                self._move_subtree_above(ancestor_sibling)
 
             if len(ancestor_younger_siblings) > 0:
-                top_moving_port = ancestor_younger_siblings[0].content.parentPort.portNumber
+                top_moving_port = ancestor_younger_siblings[0].content.parentPort.port_number
                 ancestor_parent_multiline = ancestor.content.parentPort.multiline
                 ancestor_parent_multiline.stretch(top_moving_port, -GraphView.VERTICAL_STEP)
 
         node_forest_root = self._forest.find_root(node)
         root_index = self._forest.roots.index(node_forest_root)
         for root in self._forest.roots[root_index+1:]:
-            self._moveSubtreeAbove(root)
+            self._move_subtree_above(root)
 
     # TODO: Implement via ConnectionMultiline
     # TODO: Implement everywhere via moveBelowBy(step)
-    def _moveSubtreeBelow(self, subroot: Node, delta_y=VERTICAL_STEP):
+    def _move_subtree_below(self, subroot: Node, delta_y=VERTICAL_STEP):
         graph_subroot = subroot.content
         graph_subroot.moveBy(0, delta_y)
         if subroot.is_parent():
             graph_subroot.childrenLine.callForAllLines("moveBy", 0, delta_y)
         for successor in subroot.successors:
-            self._moveSubtreeBelow(successor)
+            self._move_subtree_below(successor)
 
-    def _moveSubtreeAbove(self, subroot: Node):
+    def _move_subtree_above(self, subroot: Node):
         graph_subroot = subroot.content
         graph_subroot.moveBy(0, -GraphView.VERTICAL_STEP)
         if subroot.is_parent():
             graph_subroot.childrenLine.callForAllLines("moveBy", 0, -GraphView.VERTICAL_STEP)
         for successor in subroot.successors:
-            self._moveSubtreeAbove(successor)
+            self._move_subtree_above(successor)
 
-    def _moveSubtreeLeft(self, subroot: Forest.ForestNode, delta_x=HORIZONTAL_STEP):
+    def _move_subtree_left(self, subroot: Forest.ForestNode, delta_x=HORIZONTAL_STEP):
         graph_subroot = subroot.content
         graph_subroot.moveBy(-delta_x, 0)
         if subroot.is_parent():
             graph_subroot.childrenLine.moveBy(-delta_x, 0)
         for successor in subroot.successors:
-            self._moveSubtreeLeft(successor)
+            self._move_subtree_left(successor)
 
-    def _removeSubtree(self, subroot: Forest.ForestNode):
+    def _remove_subtree(self, subroot: Forest.ForestNode):
         graph_node = subroot.content
         if subroot.is_successor():
-            graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.portNumber)
+            graph_node.parentPort.multiline.deleteChild(graph_node.parentPort.port_number)
         self._scene.removeItem(graph_node)
         for child in reversed(subroot.successors):
-            self._removeSubtree(child)
+            self._remove_subtree(child)
 
-    def _calcNewRootPosition(self) -> QPointF:
+    def _calc_new_root_position(self) -> QPointF:
         x = GraphView.HORIZONTAL_INDENT
         layer = self._forest.calc_width() + 1
-        y = GraphView.VERTICAL_INDENT + (layer) * GraphView.VERTICAL_STEP
+        y = GraphView.VERTICAL_INDENT + layer * GraphView.VERTICAL_STEP
         return QPointF(x, y)
 
-    def _updateSceneRect(self):
+    def _update_scene_rect(self):
         items_rect = self._scene.itemsBoundingRect()
         scene_rect = self._scene.sceneRect()
         new_width = items_rect.x() + items_rect.width() + GraphView.HORIZONTAL_INDENT - scene_rect.x()
