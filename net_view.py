@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 from typing import Optional
-from math import ceil
 
 from electric_net import *
 
@@ -25,6 +24,7 @@ class NetView(GraphView):
 
     class NotSpecifiedParentForDeletion(Exception): pass
     class ClosingReconnection(Exception): pass
+    class InvalidNodeWidget(Exception): pass
 
 
     def __init__(self, parent: QWidget=None):
@@ -45,17 +45,17 @@ class NetView(GraphView):
         self._lines = 0
 
 
-    def initNet(self):
+    def init_net(self):
         self._electric_net = ElectricNet()
 
-    def setNet(self, net: ElectricNet):
+    def set_net(self, net: ElectricNet):
         self._electric_net = net
         self.blockSignals(True)
-        for input in self._electric_net.get_inputs():
-            self._placeSubtree(input)
+        for power_input in self._electric_net.get_inputs():
+            self._placeSubtree(power_input)
         self.blockSignals(False)
 
-    def initView(self, logger: LoggerIf=None):
+    def init_view(self, logger: LoggerIf=None):
         self.init()
         self._logger = logger
 
@@ -86,9 +86,12 @@ class NetView(GraphView):
             if self._parent_to_be_deleted is None:
                 raise NetView.NotSpecifiedParentForDeletion
 
+            selected_forest_node = None
             for child_item in selected_node.childItems():
                 if isinstance(child_item, QGraphicsProxyWidget):
                     widget = child_item.widget()
+                    if not isinstance(widget, ElectricNodeWidget):
+                        raise NetView.InvalidNodeWidget
                     selected_forest_node = widget.electric_node
 
             if not is_reconnection_correct(selected_forest_node):
@@ -106,8 +109,8 @@ class NetView(GraphView):
 
 
             self.delete_parent(self._parent_to_be_deleted, selected_node)
-            self._electric_net._forest.move_subtree(self._parent_to_be_deleted_forest_node, selected_forest_node)
-            self._electric_net._forest.cut_node(self._parent_to_be_deleted_forest_node)
+            self._electric_net.forest.move_subtree(self._parent_to_be_deleted_forest_node, selected_forest_node)
+            self._electric_net.forest.cut_node(self._parent_to_be_deleted_forest_node)
 
             self._log('Delete Ancestor Reconnecting', self._parent_to_be_deleted_forest_node.content.name,
                       selected_forest_node.content.name)
@@ -170,11 +173,11 @@ class NetView(GraphView):
     def placeInput(self, node: Forest.ForestNode) -> GraphNode:
         widget, ui_form = NetView._prepareSourceWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
-        input = self.add_root(widget, side_widgets)
+        power_input = self.add_root(widget, side_widgets)
         widget.electric_node = node
 
-        input.clicked.connect(self.nodeSelected)
-        input.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        power_input.clicked.connect(self.nodeSelected)
+        power_input.sideWidgetClicked.connect(widget.receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
@@ -183,7 +186,7 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(widget.changeName)
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
-        return input
+        return power_input
 
     def placeConverter(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
         widget, ui_form = NetView._prepareConverterWidget()
@@ -192,7 +195,7 @@ class NetView(GraphView):
         widget.electric_node = node
 
         converter.clicked.connect(self.nodeSelected)
-        converter.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        converter.sideWidgetClicked.connect(widget.receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
@@ -212,7 +215,7 @@ class NetView(GraphView):
         widget.electric_node = node
 
         load.clicked.connect(self.nodeSelected)
-        load.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        load.sideWidgetClicked.connect(widget.receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
@@ -227,12 +230,12 @@ class NetView(GraphView):
     def _addInput(self):
         widget, ui_form = NetView._prepareSourceWidget()
         side_widgets = NetView._prepareSourceSideWidgets()
-        input = self.add_root(widget, side_widgets)
+        power_input = self.add_root(widget, side_widgets)
         new_input = self._electric_net.create_input()
         widget.electric_node = new_input
 
-        input.clicked.connect(self.nodeSelected)
-        input.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        power_input.clicked.connect(self.nodeSelected)
+        power_input.sideWidgetClicked.connect(widget.receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
@@ -259,7 +262,7 @@ class NetView(GraphView):
         widget.electric_node = new_converter
 
         converter.clicked.connect(self.nodeSelected)
-        converter.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        converter.sideWidgetClicked.connect(widget.receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         widget.converterAdded.connect(self._addConverter)
         widget.loadAdded.connect(self._addLoad)
@@ -274,6 +277,7 @@ class NetView(GraphView):
         self._cur_new_converter_number += 1
         ui_form.nameLineEdit.setText(name)
 
+        source_name = ''
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
                 widget = item.widget()
@@ -291,7 +295,7 @@ class NetView(GraphView):
         widget.electric_node = new_load
 
         consumer.clicked.connect(self.nodeSelected)
-        consumer.sideWidgetClicked.connect(widget._receiveNodeSideWidgetClick)
+        consumer.sideWidgetClicked.connect(widget.receiveNodeSideWidgetClick)
         widget.deleted.connect(self._deleteNode)
         ui_form.valueLineEdit.textChanged.connect(widget.changeValue)
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
@@ -304,6 +308,7 @@ class NetView(GraphView):
         self._cur_new_consumer_number += 1
         ui_form.nameLineEdit.setText(name)
 
+        source_name = ''
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
                 widget = item.widget()
@@ -316,17 +321,16 @@ class NetView(GraphView):
     def _deleteNode(self, graph_node: GraphNode, forest_node: Forest.ForestNode):
         if forest_node.is_leaf():
             self.delete_leaf(graph_node)
-            self._electric_net._forest.delete_leaf(forest_node)
+            self._electric_net.forest.delete_leaf(forest_node)
             log_action_str = 'Delete Leaf'
 
         else:
-            if len(self._electric_net._forest.roots) == 1 and \
-               id(forest_node) == id(self._electric_net._forest.roots[0]):
+            if len(self._electric_net.forest.roots) == 1 and id(forest_node) == id(self._electric_net.forest.roots[0]):
                 button = QMessageBox.question(self, 'There is no node to be a new parent',
                                                     'Are you sure, that you want to fully clear the net?')
                 if button == QMessageBox.StandardButton.Yes:
                     self.delete_parent(graph_node)
-                    self._electric_net._forest.delete_subtree(forest_node)
+                    self._electric_net.forest.delete_subtree(forest_node)
                 return
 
             mode_selection_message_box = QMessageBox(QMessageBox.Icon.Question,
@@ -345,11 +349,11 @@ class NetView(GraphView):
                 if mode_selection_message_box.clickedButton() == delete_button:
                     log_action_str = 'Delete Subtree'
                     self.delete_parent(graph_node)
-                    self._electric_net._forest.delete_subtree(forest_node)
+                    self._electric_net.forest.delete_subtree(forest_node)
                 elif mode_selection_message_box.clickedButton() == promote_button:
                     log_action_str = 'Delete Ancestor Promoting'
                     self.delete_parent(graph_node, graph_node.parentPort.multiline._parent)
-                    self._electric_net._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
+                    self._electric_net.forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
                 elif mode_selection_message_box.clickedButton() == reconnect_button:
                     self._is_waiting_for_node_selection = True
                     self._parent_to_be_deleted = graph_node
@@ -366,7 +370,7 @@ class NetView(GraphView):
                 if mode_selection_message_box.clickedButton() == delete_button:
                     log_action_str = 'Delete Subtree'
                     self.delete_parent(graph_node)
-                    self._electric_net._forest.delete_subtree(forest_node)
+                    self._electric_net.forest.delete_subtree(forest_node)
                 elif mode_selection_message_box.clickedButton() == reconnect_button:
                     self._is_waiting_for_node_selection = True
                     self._parent_to_be_deleted = graph_node
@@ -413,7 +417,7 @@ class NetView(GraphView):
         input_ui.valueLineEdit.setPalette(palette)
         input_ui.nameLineEdit.setPalette(palette)
 
-        # TODO: app is falling, when already inputed number are fully cleared
+        # TODO: app is falling, when already entered number are fully cleared
         input_ui.valueLineEdit.setValidator(QDoubleValidator())
 
         return widget, input_ui
@@ -446,7 +450,7 @@ class NetView(GraphView):
         converter_ui.valueLineEdit.setPalette(palette)
         converter_ui.nameLineEdit.setPalette(palette)
 
-        # TODO: app is falling, when already inputed number are fully cleared
+        # TODO: app is falling, when already entered number are fully cleared
         converter_ui.valueLineEdit.setValidator(QDoubleValidator())
 
         return widget, converter_ui
@@ -524,10 +528,10 @@ class NetView(GraphView):
         return True
 
     def _collect_graphic_roots(self, initial_search_position: QPointF) -> Optional[list[GraphNode]]:
-        def is_search_position_out_of_scene(net_view: NetView, search_position: QPointF):
+        def is_search_position_out_of_scene(net_view: NetView, position: QPointF):
             scene_rect = net_view._scene.sceneRect()
             scene_bottom_bound = scene_rect.bottom()
-            result = search_position.y() >= scene_bottom_bound
+            result = position.y() >= scene_bottom_bound
             return result
 
         roots = []
@@ -643,11 +647,11 @@ class NetView(GraphView):
 
         return True
 
-    def _get_all_items_of_type(self, type):
+    def _get_all_items_of_type(self, item_type):
         items = []
         scene_items = self._scene.items()
         for item in scene_items:
-            if isinstance(item, type):
+            if isinstance(item, item_type):
                 items.append(item)
         return items
 
@@ -666,7 +670,7 @@ class NetView(GraphView):
 
     def _check_forests_coherency(self):
         graphic_forest = self._forest
-        electric_forest = self._electric_net._forest
+        electric_forest = self._electric_net.forest
         if len(graphic_forest.roots) != len(electric_forest.roots):
             return False
 
@@ -678,9 +682,9 @@ class NetView(GraphView):
     def _check_subtrees_coherency(self, graphic_subroot: Forest.ForestNode, electric_subroot: Forest.ForestNode):
         graphic_subroot_graph_node = graphic_subroot.content
         subroot_widget = self._get_widget(graphic_subroot_graph_node)
-        electric_subroot_candidate = subroot_widget._electric_node
+        electric_subroot_candidate = subroot_widget.electric_node
 
-        if id(electric_subroot) != id (electric_subroot_candidate):
+        if id(electric_subroot) != id(electric_subroot_candidate):
             return False
         if len(graphic_subroot.successors) != len(electric_subroot.successors):
             return False
@@ -690,7 +694,8 @@ class NetView(GraphView):
                 return False
         return True
 
-    def _get_widget(self, node: GraphNode) -> SourceWidget | ConverterWidget | LoadWidget | None:
+    @staticmethod
+    def _get_widget(node: GraphNode) -> ElectricNodeWidget | None:
         child_items = node.childItems()
         for item in child_items:
             if isinstance(item, QGraphicsProxyWidget):
@@ -706,7 +711,7 @@ class NetView(GraphView):
         return items[0]
 
     def _check_line(self, line: QGraphicsLineItem, proper_start: QPointF, proper_end: QPointF, search_point: QPointF):
-        if not self._check_line_placement(line, proper_start, proper_end):
+        if not NetView._check_line_placement(line, proper_start, proper_end):
             return False
         line_candidate = self._get_single_item_at_point_by_type(search_point, QGraphicsLineItem)
         if line_candidate is None:
@@ -717,32 +722,33 @@ class NetView(GraphView):
         self._lines += 1
         return True
 
-    def _check_line_placement(self, line: QGraphicsLineItem, proper_start: QPointF, proper_end: QPointF):
+    @staticmethod
+    def _check_line_placement(line: QGraphicsLineItem, proper_start: QPointF, proper_end: QPointF):
         qlinef = line.line()
         qlinef_p1 = line.mapToScene(qlinef.p1())
         qlinef_p2 = line.mapToScene(qlinef.p2())
 
-        if not self._are_coordinates_equal(qlinef_p1.x(), proper_start.x()):
+        if not NetView._are_coordinates_equal(qlinef_p1.x(), proper_start.x()):
             return False
-        if not self._are_coordinates_equal(qlinef_p1.y(), proper_start.y()):
+        if not NetView._are_coordinates_equal(qlinef_p1.y(), proper_start.y()):
             return False
-        if not self._are_coordinates_equal(qlinef_p2.x(), proper_end.x()):
+        if not NetView._are_coordinates_equal(qlinef_p2.x(), proper_end.x()):
             return False
-        if not self._are_coordinates_equal(qlinef_p2.y(), proper_end.y()):
-            return False
-        return True
-
-    def _are_coordinates_equal(self, first, second):
-        EPSILON = 0.001
-        if abs(first - second) > EPSILON:
+        if not NetView._are_coordinates_equal(qlinef_p2.y(), proper_end.y()):
             return False
         return True
 
+    @staticmethod
+    def _are_coordinates_equal(first, second):
+        epsilon = 0.001
+        if abs(first - second) > epsilon:
+            return False
+        return True
 
-class SourceWidget(QWidget):
-    def __init__(self, ui_form: Ui_SourceWidget):
+
+class ElectricNodeWidget(QWidget):
+    def __init__(self):
         super().__init__()
-        self.ui = ui_form
         self._electric_node = None
 
     @property
@@ -751,6 +757,12 @@ class SourceWidget(QWidget):
     @electric_node.setter
     def electric_node(self, value: Forest.ForestNode):
         self._electric_node = value
+
+
+class SourceWidget(ElectricNodeWidget):
+    def __init__(self, ui_form: Ui_SourceWidget):
+        super().__init__()
+        self.ui = ui_form
 
     converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
     loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
@@ -773,7 +785,7 @@ class SourceWidget(QWidget):
         self._electric_node.content.value = new_value
 
     @pyqtSlot('PyQt_PyObject', int)
-    def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
+    def receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
         if side_widget_num == NetView._SIDE_WIDGET_KEYS["Delete"]:
             self.deleted.emit(source, self._electric_node)
         elif side_widget_num == NetView._SIDE_WIDGET_KEYS["Converter"]:
@@ -782,7 +794,7 @@ class SourceWidget(QWidget):
             self.loadAdded.emit(source, self._electric_node)
 
 
-class ConverterWidget(QWidget):
+class ConverterWidget(ElectricNodeWidget):
     _TYPE_BUTTON_IDS = {
         "Linear": 1,
         "Converter": 2
@@ -791,14 +803,6 @@ class ConverterWidget(QWidget):
     def __init__(self, ui_form: Ui_ConverterWidget):
         super().__init__()
         self.ui = ui_form
-        self._electric_node = None
-
-    @property
-    def electric_node(self) -> Forest.ForestNode:
-        return self._electric_node
-    @electric_node.setter
-    def electric_node(self, value: Forest.ForestNode):
-        self._electric_node = value
 
     converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
     loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
@@ -828,7 +832,7 @@ class ConverterWidget(QWidget):
             self._electric_node.content.converter_type = ConverterType.SWITCHING
 
     @pyqtSlot('PyQt_PyObject', int)
-    def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
+    def receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
         if side_widget_num == NetView._SIDE_WIDGET_KEYS["Delete"]:
             self.deleted.emit(source, self._electric_node)
         elif side_widget_num == NetView._SIDE_WIDGET_KEYS["Converter"]:
@@ -837,7 +841,7 @@ class ConverterWidget(QWidget):
             self.loadAdded.emit(source, self._electric_node)
 
 
-class LoadWidget(QWidget):
+class LoadWidget(ElectricNodeWidget):
     _TYPE_BUTTON_IDS = {
         "Constant Current": 1,
         "Resistive": 2
@@ -846,7 +850,6 @@ class LoadWidget(QWidget):
     def __init__(self, ui_form: Ui_LoadWidget):
         super().__init__()
         self.ui = ui_form
-        self._electric_node = None
 
     @pyqtSlot(str)
     def changeName(self, text: str):
@@ -855,13 +858,6 @@ class LoadWidget(QWidget):
         else:
             new_value = None
         self._electric_node.content.name = new_value
-
-    @property
-    def electric_node(self) -> Forest.ForestNode:
-        return self._electric_node
-    @electric_node.setter
-    def electric_node(self, value: Forest.ForestNode):
-        self._electric_node = value
 
     deleted = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='deleted')
 
@@ -883,6 +879,6 @@ class LoadWidget(QWidget):
             self._electric_node.content.consumer_type = ConsumerType.RESISTIVE
 
     @pyqtSlot('PyQt_PyObject', int)
-    def _receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
+    def receiveNodeSideWidgetClick(self, source: QGraphicsItem, side_widget_num):
         if side_widget_num == NetView._SIDE_WIDGET_KEYS["Delete"]:
             self.deleted.emit(source, self._electric_node)

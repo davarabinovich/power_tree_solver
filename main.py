@@ -56,12 +56,12 @@ class AppSupervisor(QObject):
                 return
             self._ui.graphview.reset()
 
-        self._ui.graphview.initNet()
+        self._ui.graphview.init_net()
         self._solver.setNet(self._ui.graphview.electric_net)
         self._active_net = self._ui.graphview.electric_net
 
         self._logger = LoggerImpl()
-        self._ui.graphview.initView(self._logger)
+        self._ui.graphview.init_view(self._logger)
         self._ui.graphview._addInput()
 
         self._ui.actionSaveAs.setEnabled(True)
@@ -86,8 +86,8 @@ class AppSupervisor(QObject):
         self._active_net = net
 
         self._logger = LoggerImpl(file_path)
-        self._ui.graphview.initView(self._logger)
-        self._ui.graphview.setNet(net)
+        self._ui.graphview.init_view(self._logger)
+        self._ui.graphview.set_net(net)
         self._logger.log_loading(file_path)
 
         self._ui.actionSaveAs.setEnabled(True)

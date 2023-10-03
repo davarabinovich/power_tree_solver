@@ -121,3 +121,7 @@ class ElectricNet:
         for successor in source_node.successors:
             sinks.append(successor)
         return sinks
+
+    @property
+    def forest(self):
+        return self._forest
