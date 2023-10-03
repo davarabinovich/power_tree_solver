@@ -788,7 +788,10 @@ class SourceWidget(ElectricNodeWidget):
     @pyqtSlot(str)
     def changeValue(self, text: str):
         if text != '':
-            new_value = float(text.replace(',', '.'))
+            try:
+                new_value = float(text.replace(',', '.'))
+            except ValueError:
+                return
         else:
             new_value = 0
         self._electric_node.content.value = new_value
@@ -828,7 +831,10 @@ class ConverterWidget(ElectricNodeWidget):
     @pyqtSlot(str)
     def changeValue(self, text: str):
         if text != '':
-            new_value = float(text.replace(',', '.'))
+            try:
+                new_value = float(text.replace(',', '.'))
+            except ValueError:
+                return
         else:
             new_value = 0
         self._electric_node.content.value = new_value
@@ -875,7 +881,10 @@ class LoadWidget(ElectricNodeWidget):
         if text != '':
             # TODO: When enter has been pressed, written number with a comma becomes an exp form number,
             #       crush when dot is entered
-            new_value = float(text.replace(',', '.'))
+            try:
+                new_value = float(text.replace(',', '.'))
+            except ValueError:
+                return
         else:
             new_value = 0
         self._electric_node.content.value = new_value

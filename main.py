@@ -170,7 +170,11 @@ def main():
     ui.actionLoadFrom.triggered.connect(supervisor.receiveLoadFromAction)
 
     window.show()
-    sys.exit(app.exec())
+
+    try:
+        sys.exit(app.exec())
+    except:
+        print(1)
 
 
 if __name__ == '__main__':
