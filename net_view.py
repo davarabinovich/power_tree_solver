@@ -57,6 +57,7 @@ class NetView(GraphView):
 
     def init_view(self, logger: LoggerIf=None):
         self.init()
+        self._is_valid = True
         self._logger = logger
 
         cross = self.add_cross(NetView.CROSS_POSITION)
@@ -576,7 +577,7 @@ class NetView(GraphView):
         subroot_parent_port = graphic_subroot.parentPort
         if subroot_parent_port:
             subroot_in_parent_line = subroot_parent_port. \
-                multiline._children_ports[subroot_parent_port.port_number - 1].node
+                multiline._children_ports[subroot_parent_port.port_number-1].node
             if id(graphic_subroot) != id(subroot_in_parent_line):
                 return None
 

@@ -158,6 +158,8 @@ class GraphView(QGraphicsView):
 
         else:
             new_parent_forest_node: Node = new_parent.data(GraphView._FOREST_NODE_DATA_KEY)
+            children = forest_node.successors
+
             if forest_node.is_ancestor(new_parent_forest_node):
                 raise GraphView.ClosingSubtreeReconnection
 
@@ -178,7 +180,8 @@ class GraphView(QGraphicsView):
                 delta_y -= 1
             if delta_y < 0:
                 delta_y += distance
-            children = forest_node.successors
+            else:
+                delta_y += len(children)
 
             cur_ancestor = new_parent_forest_node
             top_moving_node = self._forest.get_next_sibling(cur_ancestor)
@@ -190,6 +193,10 @@ class GraphView(QGraphicsView):
                     break
 
             for i in range(len(children)):
+                top_moving_forest_node: GraphNode = top_moving_node.content
+                top_moving_forest_node.parentPort.multiline.stretch(top_moving_forest_node.parentPort.port_number,
+                                                                    GraphView.VERTICAL_STEP)
+                self._move_subtree_below(top_moving_node)
                 self._move_nodes_below(top_moving_node, GraphView.VERTICAL_STEP)
             for child in children:
                 self._move_subtree_left(child, delta_x * GraphView.HORIZONTAL_STEP)
@@ -214,9 +221,12 @@ class GraphView(QGraphicsView):
             self._forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
             self._scene.removeItem(graph_node)
 
+        self._update_scene_rect()
+
     def reset(self):
         self._scene.clear()
         self._forest = Forest()
+        self._update_scene_rect()
 
 
     # Private interface
