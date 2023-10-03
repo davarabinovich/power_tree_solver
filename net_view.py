@@ -338,8 +338,7 @@ class NetView(GraphView):
                                                      'The node with successors are being deleted',
                                                      'What do you want to do with successors?', parent=self)
             delete_button = mode_selection_message_box.addButton('Delete', QMessageBox.ButtonRole.NoRole)
-            reconnect_button = mode_selection_message_box.addButton('Reconnect', QMessageBox.ButtonRole.NoRole)
-
+            # reconnect_button = mode_selection_message_box.addButton('Reconnect', QMessageBox.ButtonRole.NoRole)
 
             if forest_node.is_successor():
                 promote_button = mode_selection_message_box.addButton('Promote', QMessageBox.ButtonRole.NoRole)
@@ -355,30 +354,39 @@ class NetView(GraphView):
                     log_action_str = 'Delete Ancestor Promoting'
                     self.delete_parent(graph_node, graph_node.parentPort.multiline._parent)
                     self._electric_net.forest.cut_node(forest_node, is_needed_to_replace_node_with_successors=True)
-                elif mode_selection_message_box.clickedButton() == reconnect_button:
-                    self._is_waiting_for_node_selection = True
-                    self._parent_to_be_deleted = graph_node
-                    self._parent_to_be_deleted_forest_node = forest_node
-                    return
+                # elif mode_selection_message_box.clickedButton() == reconnect_button:
+                #     self._is_waiting_for_node_selection = True
+                #     self._parent_to_be_deleted = graph_node
+                #     self._parent_to_be_deleted_forest_node = forest_node
+                #     return
                 else:
                     return
 
             else:
-                cancel_button = mode_selection_message_box.addButton('', QMessageBox.ButtonRole.RejectRole)
-                cancel_button.hide()
-                mode_selection_message_box.exec()
-
-                if mode_selection_message_box.clickedButton() == delete_button:
+                button = QMessageBox.question(self, 'You are going to delete a whole tree',
+                                              'Are you sure, that you want to delete the root with all successors?')
+                if button == QMessageBox.StandardButton.Yes:
                     log_action_str = 'Delete Subtree'
                     self.delete_parent(graph_node)
                     self._electric_net.forest.delete_subtree(forest_node)
-                elif mode_selection_message_box.clickedButton() == reconnect_button:
-                    self._is_waiting_for_node_selection = True
-                    self._parent_to_be_deleted = graph_node
-                    self._parent_to_be_deleted_forest_node = forest_node
-                    return
                 else:
                     return
+
+                # cancel_button = mode_selection_message_box.addButton('', QMessageBox.ButtonRole.RejectRole)
+                # cancel_button.hide()
+                # mode_selection_message_box.exec()
+                #
+                # if mode_selection_message_box.clickedButton() == delete_button:
+                #     log_action_str = 'Delete Subtree'
+                #     self.delete_parent(graph_node)
+                #     self._electric_net.forest.delete_subtree(forest_node)
+                # elif mode_selection_message_box.clickedButton() == reconnect_button:
+                #     self._is_waiting_for_node_selection = True
+                #     self._parent_to_be_deleted = graph_node
+                #     self._parent_to_be_deleted_forest_node = forest_node
+                #     return
+                # else:
+                #     return
 
         self._log(log_action_str, forest_node.content.name)
 
