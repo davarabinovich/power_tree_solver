@@ -21,13 +21,13 @@ class MultilinePort:
 
 class GraphNode(QGraphicsObject):
     # Public interface
-    WIDTH = 200
-    HEIGHT = 175
+    WIDTH = 180
+    HEIGHT = 135
     ROUNDING = 10
 
     FILLING_COLOR = QColorConstants.Black
     OUTLINE_COLOR = QColorConstants.Yellow
-    OUTLINE_THICKNESS = 5
+    OUTLINE_THICKNESS = 3
     HALF_OUTLINE_THICKNESS = OUTLINE_THICKNESS / 2
 
     CROSS_GAP = 5

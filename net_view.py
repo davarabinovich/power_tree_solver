@@ -426,6 +426,9 @@ class NetView(GraphView):
         input_ui.valueLineEdit.setPalette(palette)
         input_ui.nameLineEdit.setPalette(palette)
 
+        palette.setColor(QPalette.ColorRole.Base, QColorConstants.White)
+        input_ui.loadValueLabel.setPalette(palette)
+
         # TODO: app is falling, when already entered number are fully cleared
         input_ui.valueLineEdit.setValidator(QDoubleValidator())
 

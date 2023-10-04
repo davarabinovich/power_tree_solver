@@ -14,8 +14,8 @@ from graph_gui_int import *
 #       and every forest node stores reference to graph node. The second one probably can be deleted.
 class GraphView(QGraphicsView):
     # Public interface
-    HORIZONTAL_GAP = 150
-    VERTICAL_GAP = 50
+    HORIZONTAL_GAP = 160
+    VERTICAL_GAP = 10
     HORIZONTAL_STEP = HORIZONTAL_GAP + GraphNode.WIDTH
     VERTICAL_STEP = VERTICAL_GAP + GraphNode.HEIGHT
     HORIZONTAL_INDENT = HORIZONTAL_GAP
