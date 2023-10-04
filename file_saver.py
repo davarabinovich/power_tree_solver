@@ -16,8 +16,8 @@ class FileSaver(QObject):
 
         self._file.write('\n')
         inputs = self._net.get_inputs()
-        for input in inputs:
-            self._record_subtree(input)
+        for power_input in inputs:
+            self._record_subtree(power_input)
 
         self._file.close()
 
@@ -27,16 +27,16 @@ class FileSaver(QObject):
                                                                      name=subroot.content.name,
                                                                      params=FileSaver._extract_node_params(subroot))
         self._file.write(record)
-        sinks = self._net.get_sinks(subroot)
+        sinks = ElectricNet.get_sinks(subroot)
         for sink in sinks:
             self._record_subtree(sink, level+1)
 
     @staticmethod
     def _extract_node_type(node: Forest.ForestNode) -> str:
-        type: ElectricNodeType = node.content.type
-        if type == ElectricNodeType.INPUT:
+        node_type: ElectricNodeType = node.content.type
+        if node_type == ElectricNodeType.INPUT:
             return 'Power_Input'
-        elif type == ElectricNodeType.CONVERTER:
+        elif node_type == ElectricNodeType.CONVERTER:
             converter_type: ConverterType = node.content.converter_type
             if converter_type == ConverterType.LINEAR:
                 return 'Linear_Converter'
@@ -79,7 +79,7 @@ class FileLoader(QObject):
     def __init__(self, parent: QObject=None):
         super().__init__(parent)
         self._file = None
-        self._net: ElectricNet|None = None
+        self._net: ElectricNet | None = None
 
     def load_net_from_file(self, path: str):
         self._file = open(path, 'r')
@@ -101,7 +101,7 @@ class FileLoader(QObject):
                 level = int(tokens[1])
                 if level == 1:
                     node = self._net.create_input()
-                    node.content.name = self._build_name_by_line_tokens(tokens)
+                    node.content.name = FileLoader._build_name_by_line_tokens(tokens)
                     cur_path = [node]
                 elif level < len(cur_path):
                     cur_path = cur_path[:level]
@@ -133,7 +133,8 @@ class FileLoader(QObject):
                 load = tokens[1][:-1]
                 cur_path[-1].content.load = float(load)
 
-    def _build_name_by_line_tokens(self, tokens: list[str]):
+    @staticmethod
+    def _build_name_by_line_tokens(tokens: list[str]):
         if len(tokens) == 4 and tokens[2] == ':':
             return ''
 
@@ -151,22 +152,22 @@ class FileLoader(QObject):
         elif type_token == 'Switching_Converter':
             node = self._net.add_converter(parent)
             node.content.converter_type = ConverterType.SWITCHING
-            node.content.name = self._build_name_by_line_tokens(tokens)
+            node.content.name = FileLoader._build_name_by_line_tokens(tokens)
             return node
         elif type_token == 'Linear_Converter':
             node = self._net.add_converter(parent)
             node.content.converter_type = ConverterType.LINEAR
-            node.content.name = self._build_name_by_line_tokens(tokens)
+            node.content.name = FileLoader._build_name_by_line_tokens(tokens)
             return node
         elif type_token == 'Constant_Current_Consumer':
             node = self._net.add_load(parent)
             node.content.consumer_type = ConsumerType.CONSTANT_CURRENT
-            node.content.name = self._build_name_by_line_tokens(tokens)
+            node.content.name = FileLoader._build_name_by_line_tokens(tokens)
             return node
         elif type_token == 'Resistive_Consumer':
             node = self._net.add_load(parent)
             node.content.consumer_type = ConsumerType.RESISTIVE
-            node.content.name = self._build_name_by_line_tokens(tokens)
+            node.content.name = FileLoader._build_name_by_line_tokens(tokens)
             return node
         else:
             raise FileLoader.InvalidRecord

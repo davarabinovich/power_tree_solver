@@ -38,7 +38,7 @@ class Solver(QObject):
             return None
 
         load = 0
-        sinks = self._electric_net.get_sinks(source)
+        sinks = ElectricNet.get_sinks(source)
         for sink in sinks:
             sink_data: ElectricNode = sink.content
             if sink_data.type == ElectricNodeType.CONVERTER:

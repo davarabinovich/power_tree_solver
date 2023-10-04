@@ -7,6 +7,8 @@ from net_view import *
 class LoggerImpl(LoggerIf):
     # Public interface
     class NoLogFile(Exception): pass
+    class AttemptToInvalidateGoodView(Exception): pass
+    class BadValidationResult(Exception): pass
 
     def __init__(self, file=None):
         super().__init__()
@@ -20,7 +22,7 @@ class LoggerImpl(LoggerIf):
         self._dump_temp_log_to_file()
 
     def write_action(self, action, *argv):
-        action_record = self._build_action_record(action, *argv)
+        action_record = LoggerImpl._build_action_record(action, *argv)
         self._write_new_record(action_record)
 
     def log_loading(self, file_path):
@@ -34,8 +36,8 @@ class LoggerImpl(LoggerIf):
         file_content += '\n\n'
         self._write_new_record(file_content)
 
-    def mark_as_invalid(self):
-        invalidate_record = self._build_mark_as_invalid_record()
+    def mark_as_invalid(self, validation_result: bool | str):
+        invalidate_record = LoggerImpl._build_mark_as_invalid_record(validation_result)
         self._write_new_record(invalidate_record)
 
     @property
@@ -59,7 +61,8 @@ class LoggerImpl(LoggerIf):
         file.write(self._temp_log)
         file.close()
 
-    def _build_action_record(self, action, *argv):
+    @staticmethod
+    def _build_action_record(action, *argv):
         new_record = '{action}, Name: {name}'.format(action=action, name=argv[0])
 
         # TODO: There is knowledge about NetView, but it doesn't reflect in code. It need to create explicit dependency
@@ -71,8 +74,20 @@ class LoggerImpl(LoggerIf):
         new_record += '\n\n'
         return new_record
 
-    def _build_mark_as_invalid_record(self):
-        new_record = 'Has become invalid'
+    @staticmethod
+    def _build_mark_as_invalid_record(validation_result: bool | str):
+        new_record = 'Has considered as invalid '
+        if type(validation_result) == bool:
+            if validation_result:
+                raise LoggerImpl.AttemptToInvalidateGoodView
+            else:
+                cause_formulation = 'because of validation fails.'
+        elif type(validation_result) == str:
+            cause_formulation = 'due to exception during validation: ' + validation_result
+        else:
+            raise LoggerImpl.BadValidationResult
+        new_record += cause_formulation
+
         new_record += '\n\n'
         return new_record
 

@@ -168,7 +168,7 @@ class NetView(GraphView):
                         widget.ui.resistiveRadioButton.setEnabled(True)
 
         # TODO: Neet to eliminate term 'input'
-        for sink in self._electric_net.get_sinks(subroot):
+        for sink in ElectricNet.get_sinks(subroot):
             self._placeSubtree(sink, graph_node)
 
     def placeInput(self, node: Forest.ForestNode) -> GraphNode:
@@ -494,7 +494,7 @@ class NetView(GraphView):
             validation_result = self._validate()
             if validation_result is not True:
                 # TODO: Log error message
-                self._logger.mark_as_invalid()
+                self._logger.mark_as_invalid(validation_result)
                 self._is_valid = False
 
     def _validate(self):

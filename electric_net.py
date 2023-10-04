@@ -22,15 +22,15 @@ class ElectricNode:
     class NotConverter(Exception): pass
     class NotConsumer(Exception): pass
 
-    def __init__(self, type: ElectricNodeType):
+    def __init__(self, node_type: ElectricNodeType):
         self._name = ''
         self._value = 0
-        self._type = type
+        self._type = node_type
         self._load = 0
 
-        if type == ElectricNodeType.CONVERTER:
+        if node_type == ElectricNodeType.CONVERTER:
             self._converter_type = ConverterType.SWITCHING
-        if type == ElectricNodeType.LOAD:
+        if node_type == ElectricNodeType.LOAD:
             self._consumer_type = ConsumerType.CONSTANT_CURRENT
 
     @property
@@ -57,10 +57,10 @@ class ElectricNode:
             raise ElectricNode.NotConverter
         return self._converter_type
     @converter_type.setter
-    def converter_type(self, type):
+    def converter_type(self, converter_type):
         if self._type != ElectricNodeType.CONVERTER:
             raise ElectricNode.NotConverter
-        self._converter_type = type
+        self._converter_type = converter_type
 
     @property
     def consumer_type(self):
@@ -68,10 +68,10 @@ class ElectricNode:
             raise ElectricNode.NotConsumer
         return self._consumer_type
     @consumer_type.setter
-    def consumer_type(self, type):
+    def consumer_type(self, consumer_type):
         if self._type != ElectricNodeType.LOAD:
             raise ElectricNode.NotConsumer
-        self._consumer_type = type
+        self._consumer_type = consumer_type
 
     @property
     def load(self):
@@ -116,7 +116,8 @@ class ElectricNet:
             inputs.append(root)
         return inputs
 
-    def get_sinks(self, source_node: Forest.ForestNode) -> list[Forest.ForestNode]:
+    @staticmethod
+    def get_sinks(source_node: Forest.ForestNode) -> list[Forest.ForestNode]:
         sinks = []
         for successor in source_node.successors:
             sinks.append(successor)

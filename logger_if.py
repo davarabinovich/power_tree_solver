@@ -12,10 +12,9 @@ class LoggerIf:
     def log_loading(self, file_path):
         raise NotImplementedError
 
-    def mark_as_invalid(self):
+    def mark_as_invalid(self, validation_result: bool | str):
         raise NotImplementedError
 
     @property
     def log_file(self):
         raise NotImplementedError
-
