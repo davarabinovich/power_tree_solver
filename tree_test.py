@@ -2,7 +2,7 @@
 import unittest
 from tree import *
 
-# TODO: Check, that any exception cancells all modifications!!!
+# TODO: Check, that any exception cancels all modifications!!!
 def convert_tree_list_to_flat_list(forest_list):
     if type(forest_list) == list:
         flat_list = [forest_list[0]]
@@ -650,7 +650,8 @@ class TestNodeCalcSubtreeDepth(unittest.TestCase):
 
 # TODO: Need to test index_by_parent
 
-# TODO: Check equivalency of work of two different methods where it's possible (for example add_leaf to None and create_root)
+# TODO: Check equivalency of work of two different methods where it's possible \
+#       (for example add_leaf to None and create_root)
 class TestForestCreateRoot(unittest.TestCase):
     def test_create_first_root(self):
         tested_forest = Forest.build_forest()

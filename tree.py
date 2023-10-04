@@ -5,7 +5,6 @@ from __future__ import annotations
 #       assumption of that they're ordered, but doesn't have any methods to change this order, and the developer meant
 #       a usual tree with unordered node's leafage.
 
-# TODO: Rework to _successors be a set
 # TODO: Implement convenient tools for tree structure visualization
 class Node:
     # Public interface
@@ -150,6 +149,7 @@ class Node:
                     additional_depth = child_subtree_depth
             depth += additional_depth
         return depth
+
     # TODO: it is used in only graph_gui. Need to be used in Tree module.
     def index_by_parent(self):
         parent = self._parent
@@ -259,7 +259,7 @@ class Forest:
         return forest
 
 
-    # TODO: Optimize all modificating functions with for loops
+    # TODO: Optimize all modifying functions with for loops
     def create_root(self, content=None) -> ForestNode:
         self._roots.append(self._create_node(content))
         return self._roots[-1]
@@ -727,19 +727,16 @@ class Tree(Forest):
 
     @staticmethod
     def create(node: Node) -> Tree:
-        # TODO: Copy successors or not
-        pass
+        raise NotImplementedError
 
     def create_root(self, node_type=Forest.ForestNode):
         raise Tree.AlreadyExistingRoot
 
     def free_node(self, node: Forest.ForestNode) -> Tree:
-        # TODO: To implement
-        pass
+        raise NotImplementedError
 
     def free_subtree(self, subroot: Forest.ForestNode) -> Tree:
-        # TODO: To implement
-        pass
+        raise NotImplementedError
 
     def _make_root(self, node: Forest.ForestNode):
         raise Tree.AlreadyExistingRoot

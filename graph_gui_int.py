@@ -226,7 +226,7 @@ class ConnectionMultiline:
 
         super().__init__()
         self._scene: QGraphicsScene = parent.scene()
-        self._parent = parent  # TODO: Use it, if it will be saved after refactoring
+        self._parent = parent
         self._children_ports: list[MultilinePort] = []
         self._parent_line = None
         self._branch_line = None
@@ -298,7 +298,6 @@ class ConnectionMultiline:
                 self._scene.removeItem(self._branch_line)
                 self._parent.childrenLine = None
 
-    # TODO: Annotate all complex types
     def stretch(self, port_number, delta_y):
         branch_qlinef = self._branch_line.line()
         new_bottom_branch_point = QPointF(branch_qlinef.p2().x(), branch_qlinef.p2().y() + delta_y)

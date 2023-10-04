@@ -1,7 +1,4 @@
 
-# TODO: Direct access to _forest and _electric_net can confuse, it's not understandable, which one shall be used to
-#       modify the net tree
-
 from __future__ import annotations
 from typing import Optional
 
@@ -16,7 +13,7 @@ from load_node import *
 from logger_if import *
 
 
-# TODO: Rename load to consumer
+# TODO: Rename load to consumer, resolve problem of mixing converters and consumers due to their similarity
 class NetView(GraphView):
     # Public interface
     CROSS_POSITION = QPointF(20, 200)
@@ -429,7 +426,6 @@ class NetView(GraphView):
         palette.setColor(QPalette.ColorRole.Base, QColorConstants.White)
         input_ui.loadValueLabel.setPalette(palette)
 
-        # TODO: app is falling, when already entered number are fully cleared
         input_ui.valueLineEdit.setValidator(QDoubleValidator())
 
         return widget, input_ui
@@ -462,7 +458,6 @@ class NetView(GraphView):
         converter_ui.valueLineEdit.setPalette(palette)
         converter_ui.nameLineEdit.setPalette(palette)
 
-        # TODO: app is falling, when already entered number are fully cleared
         converter_ui.valueLineEdit.setValidator(QDoubleValidator())
 
         return widget, converter_ui
@@ -493,7 +488,6 @@ class NetView(GraphView):
             self._logger.write_action(action, *argv)
             validation_result = self._validate()
             if validation_result is not True:
-                # TODO: Log error message
                 self._logger.mark_as_invalid(validation_result)
                 self._is_valid = False
 
@@ -506,7 +500,7 @@ class NetView(GraphView):
             graphic_roots = self._collect_graphic_roots(initial_search_position)
             if graphic_roots is None:
                 return False
-            total_width = self._check_siblings(graphic_roots, self._forest.roots, initial_search_position)
+            total_width = self._check_siblings(graphic_roots, self._graph_forest.roots, initial_search_position)
             if total_width is None:
                 return False
 
@@ -668,8 +662,8 @@ class NetView(GraphView):
         return items
 
     def _check_scene_size(self):
-        forest_width = self._forest.calc_width()
-        forest_depth = self._forest.calc_depth()
+        forest_width = self._graph_forest.calc_width()
+        forest_depth = self._graph_forest.calc_depth()
         proper_scene_right_x = GraphView.HORIZONTAL_INDENT + (forest_depth + 1) * GraphView.HORIZONTAL_STEP
         proper_scene_bottom_y = GraphView.VERTICAL_INDENT + (forest_width + 1) * GraphView.VERTICAL_STEP
         scene_rect = self._scene.sceneRect()
@@ -681,7 +675,7 @@ class NetView(GraphView):
         return True
 
     def _check_forests_coherency(self):
-        graphic_forest = self._forest
+        graphic_forest = self._graph_forest
         electric_forest = self._electric_net.forest
         if len(graphic_forest.roots) != len(electric_forest.roots):
             return False

@@ -21,7 +21,6 @@ class AppSupervisor(QObject):
         self._logger: LoggerImpl | None = None
 
     # TODO: Ensure, that it's not needed to resolve the net manually when saving is called
-    # TODO: Program crushes, when cancel is pressed
     @pyqtSlot()
     def receiveSaveAsAction(self):
         file_url_tuple = QFileDialog.getSaveFileUrl(self._main_window,
