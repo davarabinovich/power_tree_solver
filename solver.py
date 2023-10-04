@@ -14,15 +14,8 @@ class Solver(QObject):
         super().__init__(parent)
         self._electric_net = None
 
-    def setNet(self, net: ElectricNet):
+    def set_net(self, net: ElectricNet):
         self._electric_net = net
-
-    def work(self):
-        while(True):
-            self.solve()
-
-    def is_completed(self):
-        return False
 
     def solve(self):
         power_inputs = self._electric_net.get_inputs()
@@ -44,7 +37,7 @@ class Solver(QObject):
             if sink_data.type == ElectricNodeType.CONVERTER:
                 converter_load = self.calc_and_write_load(sink)
                 if type(converter_load) is float:
-                    converter_consumption = self.calc_consumption(sink)
+                    converter_consumption = Solver.calc_consumption(sink)
                     load += converter_consumption
                 else:
                     return None
@@ -62,7 +55,8 @@ class Solver(QObject):
         source_data.load = load
         return load
 
-    def calc_consumption(self, sink: Forest.ForestNode):
+    @staticmethod
+    def calc_consumption(sink: Forest.ForestNode):
         sink_data: ElectricNode = sink.content
         if sink_data.type == ElectricNodeType.INPUT:
             raise Solver.ConsumptionCalculationForInput

@@ -135,7 +135,7 @@ class Node:
         if len(self.successors) > 0:
             width += len(self.successors) - 1
             for successor in self._successors:
-               width += successor.calc_subtree_width()
+                width += successor.calc_subtree_width()
 
         return width
 
@@ -370,7 +370,7 @@ class Forest:
             raise Forest.NotLeaf
         if leaf.is_root():
             self._roots.remove(leaf)
-        self._delete_node(leaf)
+        self._remove_node_from_its_forest(leaf)
 
     def cut_node(self, node: ForestNode, is_needed_to_replace_node_with_successors=False):
         self._validate_nodes(node)
@@ -400,7 +400,7 @@ class Forest:
             for successor in temp_node_successors:
                 self._roots.append(successor)
 
-        self._delete_node(node)
+        self._remove_node_from_its_forest(node)
 
     def delete_subtree(self, subroot: ForestNode):
         self._validate_nodes(subroot)
@@ -524,7 +524,8 @@ class Forest:
                 depth = tree_depth
         return depth
 
-    def calc_left_part_subtree_width(self, section_node: Node, subroot: Node):
+    @staticmethod
+    def calc_left_part_subtree_width(section_node: Node, subroot: Node):
         width = 0
         cur_node = section_node
         while id(cur_node) != id(subroot):
@@ -535,7 +536,8 @@ class Forest:
             cur_node = cur_node.parent
         return width
 
-    def calc_right_part_subtree_width(self, section_node: Node, subroot: Node):
+    @staticmethod
+    def calc_right_part_subtree_width(section_node: Node, subroot: Node):
         width = section_node.calc_subtree_width()
         cur_node = section_node
         while id(cur_node) != id(subroot):
@@ -692,7 +694,8 @@ class Forest:
     def _create_node(self, content=None) -> ForestNode:
         return Forest.ForestNode(self, content)
 
-    def _delete_node(self, node: ForestNode):
+    @staticmethod
+    def _remove_node_from_its_forest(node: ForestNode):
         node.set_forest_ref(None)
         node.disconnect()
 

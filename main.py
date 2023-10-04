@@ -1,10 +1,8 @@
 
-import typing
 import sys
 
 from main_window import *
 from solver import *
-from net_view import *
 from file_saver import *
 from logger_impl import *
 
@@ -57,7 +55,7 @@ class AppSupervisor(QObject):
             self._ui.graphview.reset()
 
         self._ui.graphview.init_net()
-        self._solver.setNet(self._ui.graphview.electric_net)
+        self._solver.set_net(self._ui.graphview.electric_net)
         self._active_net = self._ui.graphview.electric_net
 
         self._logger = LoggerImpl()
@@ -82,7 +80,7 @@ class AppSupervisor(QObject):
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         file_loader = FileLoader()
         net = file_loader.load_net_from_file(file_path)
-        self._solver.setNet(net)
+        self._solver.set_net(net)
         self._active_net = net
 
         self._logger = LoggerImpl(file_path)
@@ -100,9 +98,10 @@ class MainWindow(QMainWindow):
         self._ui.setupUi(self)
         self._supervisor: AppSupervisor | None = None
         self._was_first_resize = False
+        self._sv: AppSupervisor | None = None
 
-    # TODO: MainWindow shall know nothing about net
-    def setSupervisor(self, sv: AppSupervisor):
+        # TODO: MainWindow shall know nothing about net
+    def set_supervisor(self, sv: AppSupervisor):
         self._sv = sv
 
     def resizeEvent(self, a0: typing.Optional[QtGui.QResizeEvent]) -> None:
@@ -161,7 +160,7 @@ def main():
     solver.loadCalculated.connect(net_view.updateLoads)
 
     supervisor = AppSupervisor(window, ui, solver)
-    window.setSupervisor(supervisor)
+    window.set_supervisor(supervisor)
     file_saver = FileSaver()
     ui.actionSaveAs.triggered.connect(supervisor.receiveSaveAsAction)
     supervisor.needToSaveActiveNet.connect(file_saver.saveNetToFile)
@@ -171,10 +170,7 @@ def main():
 
     window.show()
 
-    try:
-        sys.exit(app.exec())
-    except:
-        print(1)
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':

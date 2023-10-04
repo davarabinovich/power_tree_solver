@@ -35,7 +35,7 @@ def is_forest_valid(forest: Forest):
             return False
     return True
 
-def is_forest_tree_valid(root: Forest.ForestNode, forest:Forest):
+def is_forest_tree_valid(root: Forest.ForestNode, forest: Forest):
     if root.get_forest_ref() != forest:
         return False
 
@@ -231,7 +231,8 @@ class TestNodeConnectTo(unittest.TestCase):
         tested_root = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7])
         tested_parent = Node.build_tree([0])
         proper_root = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7])
-        proper_alien_root = Node.build_tree([0, [1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7]])
+        proper_alien_root = Node.build_tree([0,
+                                             [1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, [6, 9, 0], 7], [2, 5, 9]], 7]])
 
         tested_root.connect_to(tested_parent)
         self.assertTrue(is_subtree_valid(tested_root))
@@ -577,7 +578,8 @@ class TestNodeIteration(unittest.TestCase):
 
     def test_iteration_by_complex_tree(self):
         tested_root = Node.build_tree([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
-        proper_root_flat_view = convert_tree_list_to_flat_list([1, [2, 9, [8, 5, 7, 2], 8], 5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
+        proper_root_flat_view = convert_tree_list_to_flat_list([1, [2, 9, [8, 5, 7, 2], 8],
+                                                                5, [3, 4, [5, 6, 7], [2, 5, 9]], 7])
         tested_root_flat_view = []
         for node in tested_root:
             tested_root_flat_view.append(node.content)
@@ -1360,7 +1362,8 @@ class TestForestIteration(unittest.TestCase):
 
     def test_iteration_forest(self):
         tested_forest = Forest.build_forest([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
-        proper_forest_flat_view = convert_forest_list_to_flat_list([2, 9, [8, 5, 7, 2], 8], [5], [3, 4, [5, 6, 7], [2, 5, 9]])
+        proper_forest_flat_view = convert_forest_list_to_flat_list([2, 9, [8, 5, 7, 2], 8],
+                                                                   [5], [3, 4, [5, 6, 7], [2, 5, 9]])
         tested_forest_flat_view = []
         for node in tested_forest:
             tested_forest_flat_view.append(node.content)
@@ -1743,6 +1746,7 @@ class TestForestCalcDistance(unittest.TestCase):
         self.assertEqual(new_proper_result, new_result)
 
     # TODO: Test tree-specific content and some forest functions on tree
+
 
 if __name__ == '__main__':
     unittest.main()
