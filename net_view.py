@@ -71,7 +71,10 @@ class NetView(GraphView):
         self._parent_to_be_deleted: GraphNode | None = None
         self._parent_to_be_deleted_forest_node: Forest.ForestNode | None = None
 
+        self.validityStatusChanged.emit(True)
+
     contentChanged = pyqtSignal(name='contentChanged')
+    validityStatusChanged = pyqtSignal(bool, name='becomeInvalid')
 
     @pyqtSlot('PyQt_PyObject')
     def nodeSelected(self, selected_node: GraphNode):
@@ -511,6 +514,7 @@ class NetView(GraphView):
             if validation_result is not True:
                 self._logger.mark_as_invalid(validation_result)
                 self._is_valid = False
+                self.validityStatusChanged.emit(False)
 
     def _validate(self):
         try:

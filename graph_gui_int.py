@@ -331,17 +331,6 @@ class ConnectionMultiline:
         new_line = QLineF(new_child_line_p1, new_child_line_p2)
         branch_line.setLine(new_line)
 
-    def callForAllLines(self, method_name: str, *args):
-        for port in self._children_ports:
-            method = getattr(port.line, method_name)
-            method(*args)
-
-        method = getattr(self._parent_line, method_name)
-        method(*args)
-
-        method = getattr(self._branch_line, method_name)
-        method(*args)
-
     def clear(self):
         if len(self._children_ports) > 0:
             raise ConnectionMultiline.CleaningNotEmptyConnection

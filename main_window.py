@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1250, 800)
+        MainWindow.resize(1250, 821)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -40,6 +40,9 @@ class Ui_MainWindow(object):
         self.menuFile = QtWidgets.QMenu(parent=self.menubar)
         self.menuFile.setObjectName("menuFile")
         MainWindow.setMenuBar(self.menubar)
+        self.statusBar = QtWidgets.QStatusBar(parent=MainWindow)
+        self.statusBar.setObjectName("statusBar")
+        MainWindow.setStatusBar(self.statusBar)
         self.actionSaveAs = QtGui.QAction(parent=MainWindow)
         self.actionSaveAs.setEnabled(False)
         self.actionSaveAs.setObjectName("actionSaveAs")

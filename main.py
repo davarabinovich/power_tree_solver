@@ -100,6 +100,8 @@ class MainWindow(QMainWindow):
         self._was_first_resize = False
         self._sv: AppSupervisor | None = None
 
+        self._ui.graphview.validityStatusChanged.connect(self.markValidity)
+
         # TODO: MainWindow shall know nothing about net
     def set_supervisor(self, sv: AppSupervisor):
         self._sv = sv
@@ -148,6 +150,15 @@ class MainWindow(QMainWindow):
             a0.accept()
         else:
             a0.ignore()
+
+    @pyqtSlot(bool)
+    def markValidity(self, is_valid):
+        if is_valid:
+            rgb_code = '0, 180, 33'
+        else:
+            rgb_code = '255, 0, 0'
+        style_sheet = 'background-color: rgb({code});'.format(code=rgb_code)
+        self._ui.statusBar.setStyleSheet(style_sheet)
 
 def main():
     app = QApplication(sys.argv)

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1250</width>
-    <height>800</height>
+    <height>821</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -62,6 +62,7 @@
    </widget>
    <addaction name="menuFile"/>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
   <action name="actionSaveAs">
    <property name="enabled">
     <bool>false</bool>
