@@ -1,5 +1,6 @@
 
 from PyQt6.QtCore import *
+from settings import *
 from electric_net import *
 
 
@@ -9,16 +10,23 @@ class FileSaver(QObject):
         self._file = None
         self._net = None
 
-    @pyqtSlot('PyQt_PyObject', str)
-    def saveNetToFile(self, net: ElectricNet, net_file: str):
-        self._file = open(net_file, 'w')
+    @pyqtSlot('PyQt_PyObject', str, 'PyQt_PyObject')
+    def saveNetToFile(self, net: ElectricNet, net_file: str, last_hrids: LastHrids):
         self._net = net
 
+        self._file = open(net_file, 'w')
         self._file.write('\n')
+
+        self._file.write('Last Power Input HRID: {hrid}\n'.format(hrid=last_hrids.power_inputs))
+        self._file.write('Last Converter HRID: {hrid}\n'.format(hrid=last_hrids.converters))
+        self._file.write('Last Consumer HRID: {hrid}\n'.format(hrid=last_hrids.consumers))
+        self._file.write('\n\n\n')
+
         inputs = self._net.get_inputs()
         for power_input in inputs:
             self._record_subtree(power_input)
 
+        self._file.write('\n')
         self._file.close()
 
     def _record_subtree(self, subroot: Forest.ForestNode, level=1):
@@ -79,21 +87,34 @@ class FileLoader(QObject):
     def __init__(self, parent: QObject=None):
         super().__init__(parent)
         self._file = None
+        self._file_content = []
         self._net: ElectricNet | None = None
 
     def load_net_from_file(self, path: str):
         self._file = open(path, 'r')
+        raw_file_lines = self._file.read().splitlines()
+        for line in raw_file_lines:
+            if not len(line) == 0:
+                self._file_content.append(line)
+
         self._net = ElectricNet()
+        last_hrids = self._extract_last_hrids_from_file()
         self._build_net_by_file(self._file)
+
         self._file.close()
-        return self._net
+        return self._net, last_hrids
+
+    def _extract_last_hrids_from_file(self) -> LastHrids:
+        last_hrids = LastHrids(power_inputs=self._file_content[0].split()[-1],
+                               converters=self._file_content[1].split()[-1],
+                               consumers=self._file_content[2].split()[-1])
+        return last_hrids
 
     def _build_net_by_file(self, file):
         cur_path: list[Forest.ForestNode] = []
-        file_lines = file.read().splitlines()
-        for line in file_lines:
-            if len(line.split()) == 0:
-                continue
+        for line in self._file_content[3:]:
+            # if len(line.split()) == 0:
+            #     continue
 
             tokens = line.split()
             leading_token = tokens[0]

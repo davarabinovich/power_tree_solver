@@ -33,7 +33,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Current:</string>
+    <string>Value:</string>
    </property>
   </widget>
   <widget class="QLabel" name="nodeTypeLabel">

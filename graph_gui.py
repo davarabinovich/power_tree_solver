@@ -71,9 +71,11 @@ class GraphView(QGraphicsView):
 
         position = GraphView._calc_new_child_position(parent)
         child = self._create_node_on_scene(position, widget, side_widgets)
+        a = child.pos()
         forest_node = self._graph_forest.add_leaf(parent_forest_node)
         self._link_graph_and_forest_nodes(child, forest_node)
         self._draw_connection(parent, child)
+        line = child.parentPort.multiline._branch_line.line()
 
         self._update_scene_rect()
 
@@ -322,7 +324,7 @@ class GraphView(QGraphicsView):
         graph_subroot = subroot.content
         graph_subroot.moveBy(0, delta_y)
         if subroot.is_parent():
-            graph_subroot.childrenLine.callForAllLines("moveBy", 0, delta_y)
+            graph_subroot.childrenLine.moveBy(0, delta_y)
         for successor in subroot.successors:
             self._move_subtree_below(successor)
 
@@ -330,7 +332,7 @@ class GraphView(QGraphicsView):
         graph_subroot = subroot.content
         graph_subroot.moveBy(0, -GraphView.VERTICAL_STEP)
         if subroot.is_parent():
-            graph_subroot.childrenLine.callForAllLines("moveBy", 0, -GraphView.VERTICAL_STEP)
+            graph_subroot.childrenLine.moveBy(0, -GraphView.VERTICAL_STEP)
         for successor in subroot.successors:
             self._move_subtree_above(successor)
 

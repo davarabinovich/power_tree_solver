@@ -2,6 +2,8 @@
 from __future__ import annotations
 from typing import Optional
 
+from settings import *
+
 from electric_net import *
 
 from graph_gui import *
@@ -45,12 +47,17 @@ class NetView(GraphView):
     def init_net(self):
         self._electric_net = ElectricNet()
 
-    def set_net(self, net: ElectricNet):
+    def set_net(self, net: ElectricNet, last_hrids: LastHrids):
         self._electric_net = net
         self.blockSignals(True)
         for power_input in self._electric_net.get_inputs():
             self._placeSubtree(power_input)
         self.blockSignals(False)
+
+        self._cur_new_power_input_number = int(last_hrids.power_inputs)
+        self._cur_new_converter_number = int(last_hrids.converters)
+        self._cur_new_consumer_number = int(last_hrids.consumers)
+
 
     def init_view(self, logger: LoggerIf=None):
         self.init()
@@ -63,10 +70,6 @@ class NetView(GraphView):
         self._is_waiting_for_node_selection = False
         self._parent_to_be_deleted: GraphNode | None = None
         self._parent_to_be_deleted_forest_node: Forest.ForestNode | None = None
-
-        self._cur_new_power_input_number = 1
-        self._cur_new_converter_number = 1
-        self._cur_new_consumer_number = 1
 
     contentChanged = pyqtSignal(name='contentChanged')
 
@@ -105,19 +108,35 @@ class NetView(GraphView):
                 self._parent_to_be_deleted_forest_node = None
                 return
 
-
             self.delete_parent(self._parent_to_be_deleted, selected_node)
             self._electric_net.forest.move_subtree(self._parent_to_be_deleted_forest_node, selected_forest_node)
             self._electric_net.forest.cut_node(self._parent_to_be_deleted_forest_node)
 
-            self._log('Delete Ancestor Reconnecting', self._parent_to_be_deleted_forest_node.content.name,
-                      selected_forest_node.content.name)
+            deleted_node_hrid = ''
+            for item in self._parent_to_be_deleted.childItems():
+                if isinstance(item, QGraphicsProxyWidget):
+                    deleted_widget = item.widget()
+                    deleted_node_hrid = deleted_widget.hrid
+
+            selected_node_hrid = ''
+            for item in selected_forest_node.content.childItems():
+                if isinstance(item, QGraphicsProxyWidget):
+                    selected_widget = item.widget()
+                    selected_node_hrid = selected_widget.hrid
+
+            self._log('Delete Ancestor Reconnecting', deleted_node_hrid, selected_node_hrid)
 
             self._is_waiting_for_node_selection = False
             self._parent_to_be_deleted = None
             self._parent_to_be_deleted_forest_node = None
 
             self.contentChanged.emit()
+
+    def get_actual_last_hrids(self) -> LastHrids:
+        last_hrids = LastHrids(power_inputs=self._cur_new_power_input_number,
+                               converters=self._cur_new_converter_number,
+                               consumers=self._cur_new_consumer_number)
+        return last_hrids
 
     @property
     def electric_net(self):
@@ -169,7 +188,7 @@ class NetView(GraphView):
             self._placeSubtree(sink, graph_node)
 
     def placeInput(self, node: Forest.ForestNode) -> GraphNode:
-        widget, ui_form = NetView._prepareSourceWidget()
+        widget, ui_form = self._prepare_source_widget()
         side_widgets = NetView._prepareSourceSideWidgets()
         power_input = self.add_root(widget, side_widgets)
         widget.electric_node = node
@@ -187,7 +206,7 @@ class NetView(GraphView):
         return power_input
 
     def placeConverter(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
-        widget, ui_form = NetView._prepareConverterWidget()
+        widget, ui_form = self._prepare_converter_widget()
         side_widgets = NetView._prepareSourceSideWidgets()
         converter = self.add_child(source, widget, side_widgets)
         widget.electric_node = node
@@ -207,7 +226,7 @@ class NetView(GraphView):
         return converter
 
     def placeLoad(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
-        widget, ui_form = NetView._prepareLoadWidget()
+        widget, ui_form = self._prepare_load_widget()
         side_widgets = NetView._prepareConsumerSideWidgets()
         load = self.add_child(source, widget, side_widgets)
         widget.electric_node = node
@@ -226,7 +245,7 @@ class NetView(GraphView):
 
     @pyqtSlot()
     def _addInput(self):
-        widget, ui_form = NetView._prepareSourceWidget()
+        widget, ui_form = self._prepare_source_widget()
         side_widgets = NetView._prepareSourceSideWidgets()
         power_input = self.add_root(widget, side_widgets)
         new_input = self._electric_net.create_input()
@@ -243,17 +262,17 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
 
         name = 'Input ' + str(self._cur_new_power_input_number)
-        self._cur_new_power_input_number += 1
         ui_form.nameLineEdit.setText(name)
+        self._cur_new_power_input_number += 1
 
-        self._log('Add Power Input', ui_form.nameLineEdit.text())
+        self._log('Add Power Input', widget.hrid)
 
         # TODO: Do using decorators
         self.contentChanged.emit()
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _addConverter(self, source: GraphNode, parent: Forest.ForestNode):
-        widget, ui_form = NetView._prepareConverterWidget()
+        widget, ui_form = self._prepare_converter_widget()
         side_widgets = NetView._prepareSourceSideWidgets()
         converter = self.add_child(source, widget, side_widgets)
         new_converter = self._electric_net.add_converter(parent)
@@ -272,21 +291,21 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
         name = 'Converter ' + str(self._cur_new_converter_number)
-        self._cur_new_converter_number += 1
         ui_form.nameLineEdit.setText(name)
+        self._cur_new_converter_number += 1
 
-        source_name = ''
+        source_hrid = ''
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
-                widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text()
-        self._log('Add Converter', ui_form.nameLineEdit.text(), source_name)
+                source_widget = item.widget()
+                source_hrid = source_widget.hrid
+        self._log('Add Converter', widget.hrid, source_hrid)
 
         self.contentChanged.emit()
 
     @pyqtSlot('PyQt_PyObject', 'PyQt_PyObject')
     def _addLoad(self, source: GraphNode, parent: Forest.ForestNode):
-        widget, ui_form = NetView._prepareLoadWidget()
+        widget, ui_form = self._prepare_load_widget()
         side_widgets = NetView._prepareConsumerSideWidgets()
         consumer = self.add_child(source, widget, side_widgets)
         new_load = self._electric_net.add_load(parent)
@@ -303,15 +322,15 @@ class NetView(GraphView):
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
 
         name = 'Consumer ' + str(self._cur_new_consumer_number)
-        self._cur_new_consumer_number += 1
         ui_form.nameLineEdit.setText(name)
+        self._cur_new_consumer_number += 1
 
-        source_name = ''
+        source_hrid = ''
         for item in source.childItems():
             if isinstance(item, QGraphicsProxyWidget):
-                widget = item.widget()
-                source_name = widget.ui.nameLineEdit.text()
-        self._log('Add Consumer', ui_form.nameLineEdit.text(), source_name)
+                source_widget = item.widget()
+                source_hrid = source_widget.hrid
+        self._log('Add Consumer', widget.hrid, source_hrid)
 
         self.contentChanged.emit()
 
@@ -385,7 +404,12 @@ class NetView(GraphView):
                 # else:
                 #     return
 
-        self._log(log_action_str, forest_node.content.name)
+        node_hrid = ''
+        for item in graph_node.childItems():
+            if isinstance(item, QGraphicsProxyWidget):
+                node_widget = item.widget()
+                node_hrid = node_widget.hrid
+        self._log(log_action_str, node_hrid)
 
         self.contentChanged.emit()
 
@@ -409,10 +433,9 @@ class NetView(GraphView):
         "Load": 2
     }
 
-    @staticmethod
-    def _prepareSourceWidget() -> tuple[SourceWidget, Ui_SourceWidget]:
+    def _prepare_source_widget(self) -> tuple[SourceWidget, Ui_SourceWidget]:
         input_ui = Ui_SourceWidget()
-        widget = SourceWidget(input_ui)
+        widget = SourceWidget(input_ui, self._cur_new_power_input_number)
         palette = QPalette(GraphNode.FILLING_COLOR)
         widget.setPalette(palette)
         input_ui.setupUi(widget)
@@ -444,10 +467,9 @@ class NetView(GraphView):
         side_widgets = [delete_cross]
         return side_widgets
 
-    @staticmethod
-    def _prepareConverterWidget() -> tuple[ConverterWidget, Ui_ConverterWidget]:
+    def _prepare_converter_widget(self) -> tuple[ConverterWidget, Ui_ConverterWidget]:
         converter_ui = Ui_ConverterWidget()
-        widget = ConverterWidget(converter_ui)
+        widget = ConverterWidget(converter_ui, self._cur_new_converter_number)
         palette = QPalette(GraphNode.FILLING_COLOR)
         widget.setPalette(palette)
         converter_ui.setupUi(widget)
@@ -462,10 +484,9 @@ class NetView(GraphView):
 
         return widget, converter_ui
 
-    @staticmethod
-    def _prepareLoadWidget() -> tuple[LoadWidget, Ui_LoadWidget]:
+    def _prepare_load_widget(self) -> tuple[LoadWidget, Ui_LoadWidget]:
         load_ui = Ui_LoadWidget()
-        widget = LoadWidget(load_ui)
+        widget = LoadWidget(load_ui, self._cur_new_consumer_number)
         palette = QPalette(GraphNode.FILLING_COLOR)
         widget.setPalette(palette)
         load_ui.setupUi(widget)
@@ -756,6 +777,7 @@ class ElectricNodeWidget(QWidget):
     def __init__(self):
         super().__init__()
         self._electric_node = None
+        self._hrid = None
 
     @property
     def electric_node(self) -> Forest.ForestNode:
@@ -764,11 +786,16 @@ class ElectricNodeWidget(QWidget):
     def electric_node(self, value: Forest.ForestNode):
         self._electric_node = value
 
+    @property
+    def hrid(self):
+        return self._hrid
+
 
 class SourceWidget(ElectricNodeWidget):
-    def __init__(self, ui_form: Ui_SourceWidget):
+    def __init__(self, ui_form: Ui_SourceWidget, hrid_number):
         super().__init__()
         self.ui = ui_form
+        self._hrid = 'PWIN-{number}'.format(number=hrid_number)
 
     converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
     loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
@@ -809,9 +836,10 @@ class ConverterWidget(ElectricNodeWidget):
         "Converter": 2
     }
 
-    def __init__(self, ui_form: Ui_ConverterWidget):
+    def __init__(self, ui_form: Ui_ConverterWidget, hrid_number):
         super().__init__()
         self.ui = ui_form
+        self._hrid = 'CNVR-{number}'.format(number=hrid_number)
 
     converterAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='converterAdded')
     loadAdded = pyqtSignal('PyQt_PyObject', 'PyQt_PyObject', name='loadAdded')
@@ -859,9 +887,10 @@ class LoadWidget(ElectricNodeWidget):
         "Resistive": 2
     }
 
-    def __init__(self, ui_form: Ui_LoadWidget):
+    def __init__(self, ui_form: Ui_LoadWidget, hrid_number):
         super().__init__()
         self.ui = ui_form
+        self._hrid = 'CSMR-{number}'.format(number=hrid_number)
 
     @pyqtSlot(str)
     def changeName(self, text: str):

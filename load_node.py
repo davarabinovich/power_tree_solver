@@ -57,7 +57,7 @@ class Ui_LoadWidget(object):
     def retranslateUi(self, LoadWidget):
         _translate = QtCore.QCoreApplication.translate
         LoadWidget.setWindowTitle(_translate("LoadWidget", "Form"))
-        self.valueLabel.setText(_translate("LoadWidget", "Current:"))
+        self.valueLabel.setText(_translate("LoadWidget", "Value:"))
         self.nodeTypeLabel.setText(_translate("LoadWidget", "Consumer"))
         self.currentRadioButton.setText(_translate("LoadWidget", "C. Current"))
         self.resistiveRadioButton.setText(_translate("LoadWidget", "Resistive"))

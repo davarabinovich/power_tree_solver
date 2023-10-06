@@ -13,11 +13,11 @@ VERSION = (0, 1, "alfa")
 class AppSupervisor(QObject):
     def __init__(self, main_window: QWidget, ui: Ui_MainWindow, solver: Solver, parent: QObject=None):
         super().__init__(parent)
+
         self._main_window = main_window
         self._ui = ui
         self._solver = solver
         self._active_net = None
-
         self._logger: LoggerImpl | None = None
 
     # TODO: Ensure, that it's not needed to resolve the net manually when saving is called
@@ -32,16 +32,17 @@ class AppSupervisor(QObject):
         if self._logger.log_file is None:
             self._logger.create_log_file(file_path)
 
-        self.needToSaveActiveNet.emit(self._active_net, file_path)
+        last_hrids = self._ui.graphview.get_actual_last_hrids()
+        self.needToSaveActiveNet.emit(self._active_net, file_path, last_hrids)
         return True
 
-    needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, name='needToSaveActiveNet')
+    needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, 'PyQt_PyObject', name='needToSaveActiveNet')
 
     def handleChangingNet(self):
         pressed_button = QMessageBox.question(self._main_window,
                                               'The net was probably changed', 'Do you want to save changes in the net?')
         if pressed_button == QMessageBox.StandardButton.Yes:
-            is_saved = self.receiveSaveAsAction()
+            is_saved = self.receiveSaveAsAction(self._ui.graphview.get_actual_last_hrids())
             return is_saved
         return True
 
@@ -78,13 +79,13 @@ class AppSupervisor(QObject):
 
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         file_loader = FileLoader()
-        net = file_loader.load_net_from_file(file_path)
+        net, first_hrids = file_loader.load_net_from_file(file_path)
         self._solver.set_net(net)
         self._active_net = net
 
         self._logger = LoggerImpl(file_path)
         self._ui.graphview.init_view(self._logger)
-        self._ui.graphview.set_net(net)
+        self._ui.graphview.set_net(net, first_hrids)
         self._logger.log_loading(file_path)
 
         self._ui.actionSaveAs.setEnabled(True)
@@ -138,7 +139,7 @@ class MainWindow(QMainWindow):
 
         pressed_button = file_saving_message_box.clickedButton()
         if pressed_button == save_button:
-            is_saved = self._sv.receiveSaveAsAction()
+            is_saved = self._sv.receiveSaveAsAction(self._ui.graphview.get_actual_last_hrids())
             if is_saved:
                 a0.accept()
             else:

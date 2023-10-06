@@ -81,7 +81,7 @@ class LoggerImpl(LoggerIf):
             if validation_result:
                 raise LoggerImpl.AttemptToInvalidateGoodView
             else:
-                cause_formulation = 'because of validation fails.'
+                cause_formulation = 'because validation fails.'
         elif type(validation_result) == str:
             cause_formulation = 'due to exception during validation: ' + validation_result
         else:
