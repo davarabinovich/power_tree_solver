@@ -104,8 +104,8 @@ class NetView(GraphView):
                     message_box_text = 'A consumer cannot be a parent'
                 else:
                     message_box_text = 'Successor of a deleting node cannot be a new parent'
-
                 QMessageBox.critical(self, message_box_title, message_box_text)
+
                 self._is_waiting_for_node_selection = False
                 self._parent_to_be_deleted = None
                 self._parent_to_be_deleted_forest_node = None

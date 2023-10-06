@@ -65,7 +65,7 @@ class LoggerImpl(LoggerIf):
     def _build_action_record(action, *argv):
         new_record = '{action}, Name: {name}'.format(action=action, name=argv[0])
 
-        # TODO: There is knowledge about NetView, but it doesn't reflect in code. It need to create explicit dependency
+        # TODO: There is knowledge about NetView, but it doesn't reflect in code. It needs to create explicit dependency
         if action in ['Place Converter', 'Add Converter', 'Place Consumer', 'Add Consumer']:
             new_record += ', Parent: {parent_name}'.format(parent_name=argv[1])
         elif action == 'Delete Ancestor Reconnecting':

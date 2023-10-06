@@ -79,7 +79,15 @@ class AppSupervisor(QObject):
 
         file_path = file_url_tuple[0].toString().removeprefix('file:///')
         file_loader = FileLoader()
-        net, first_hrids = file_loader.load_net_from_file(file_path)
+
+        reading_result = file_loader.load_net_from_file(file_path)
+        if reading_result is None:
+            message_box_title = 'Bad .ens file'
+            message_box_text = 'The pts application cannot parse the file you have specified'
+            QMessageBox.critical(self._main_window, message_box_title, message_box_text)
+            return
+
+        net, first_hrids = reading_result
         self._solver.set_net(net)
         self._active_net = net
 

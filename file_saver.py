@@ -1,4 +1,5 @@
 
+from typing import Optional
 from PyQt6.QtCore import *
 from settings import *
 from electric_net import *
@@ -90,16 +91,19 @@ class FileLoader(QObject):
         self._file_content = []
         self._net: ElectricNet | None = None
 
-    def load_net_from_file(self, path: str):
+    def load_net_from_file(self, path: str) -> tuple[ElectricNet, LastHrids] | None:
         self._file = open(path, 'r')
         raw_file_lines = self._file.read().splitlines()
         for line in raw_file_lines:
             if not len(line) == 0:
                 self._file_content.append(line)
 
-        self._net = ElectricNet()
-        last_hrids = self._extract_last_hrids_from_file()
-        self._build_net_by_file(self._file)
+        try:
+            self._net = ElectricNet()
+            last_hrids = self._extract_last_hrids_from_file()
+            self._build_net_by_file(self._file)
+        except Exception as exception:
+            return None
 
         self._file.close()
         return self._net, last_hrids
