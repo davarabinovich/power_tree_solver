@@ -25,20 +25,12 @@ class LoggerImpl(LoggerIf):
         action_record = LoggerImpl._build_action_record(action, *argv)
         self._write_new_record(action_record)
 
-    def log_loading(self, file_path):
-        file = open(file_path, 'r')
-        file_content = file.read()
-        file.close()
-
-        if self._log_file is None:
-            raise LoggerImpl.NoLogFile
-
-        file_content += '\n\n'
-        self._write_new_record(file_content)
-
     def mark_as_invalid(self, validation_result: bool | str):
         invalidate_record = LoggerImpl._build_mark_as_invalid_record(validation_result)
         self._write_new_record(invalidate_record)
+        
+    def write_generic_record(self, record):
+        self._write_new_record(record)
 
     @property
     def log_file(self):

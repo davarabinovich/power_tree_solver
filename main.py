@@ -94,7 +94,6 @@ class AppSupervisor(QObject):
         self._logger = LoggerImpl(file_path)
         self._ui.graphview.init_view(self._logger)
         self._ui.graphview.set_net(net, first_hrids)
-        self._logger.log_loading(file_path)
 
         self._ui.actionSaveAs.setEnabled(True)
 

@@ -1,5 +1,4 @@
 
-from typing import Optional
 from PyQt6.QtCore import *
 from settings import *
 from electric_net import *

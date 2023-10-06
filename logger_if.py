@@ -9,10 +9,10 @@ class LoggerIf:
     def write_action(self, action, *argv):
         raise NotImplementedError
 
-    def log_loading(self, file_path):
+    def mark_as_invalid(self, validation_result: bool | str):
         raise NotImplementedError
 
-    def mark_as_invalid(self, validation_result: bool | str):
+    def write_generic_record(self, record):
         raise NotImplementedError
 
     @property
