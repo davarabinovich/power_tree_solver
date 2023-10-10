@@ -1,7 +1,8 @@
 
-from PyQt6.QtCore import *
-from settings import *
-from electric_net import *
+from net_view import *
+
+
+EXTENSION = '.ens'
 
 
 class FileSaver(QObject):
@@ -9,35 +10,44 @@ class FileSaver(QObject):
         super().__init__(parent)
         self._file = None
         self._net = None
+        self._graph = None
 
-    @pyqtSlot('PyQt_PyObject', str, 'PyQt_PyObject')
-    def saveNetToFile(self, net: ElectricNet, net_file: str, last_hrids: LastHrids):
-        self._net = net
+    @pyqtSlot('PyQt_PyObject', str)
+    def saveNetToFile(self, net_view: NetView, net_file: str):
+        self._net = net_view.electric_net
+        self._graph = net_view._graph_forest
 
         self._file = open(net_file, 'w')
         self._file.write('\n')
 
+        last_hrids = net_view.get_actual_last_hrids()
         self._file.write('Last Power Input HRID: {hrid}\n'.format(hrid=last_hrids.power_inputs))
         self._file.write('Last Converter HRID: {hrid}\n'.format(hrid=last_hrids.converters))
         self._file.write('Last Consumer HRID: {hrid}\n'.format(hrid=last_hrids.consumers))
         self._file.write('\n\n\n')
 
         inputs = self._net.get_inputs()
-        for power_input in inputs:
-            self._record_subtree(power_input)
+        for index in range(len(inputs)):
+            self._record_subtree(inputs[index], self._graph.roots[index])
 
         self._file.write('\n')
         self._file.close()
 
-    def _record_subtree(self, subroot: Forest.ForestNode, level=1):
-        record = 'Level {level} {type} {name}:\n{params}\n\n'.format(level=level,
-                                                                     type=FileSaver._extract_node_type(subroot),
-                                                                     name=subroot.content.name,
-                                                                     params=FileSaver._extract_node_params(subroot))
+    def _record_subtree(self, electric_subroot: Forest.ForestNode, graphic_subroot: Forest.ForestNode, level=1):
+        subroot_hrid = ''
+        for item in graphic_subroot.content.childItems():
+            if isinstance(item, QGraphicsProxyWidget):
+                widget = item.widget()
+                subroot_hrid = widget.hrid
+
+        record = 'Level {level} {type} {hrid} {name}:\n{params}\n\n'\
+            .format(level=level, type=FileSaver._extract_node_type(electric_subroot), hrid=subroot_hrid,
+                    name=electric_subroot.content.name, params=FileSaver._extract_node_params(electric_subroot))
+
         self._file.write(record)
-        sinks = ElectricNet.get_sinks(subroot)
-        for sink in sinks:
-            self._record_subtree(sink, level+1)
+        sinks = ElectricNet.get_sinks(electric_subroot)
+        for index in range(len(sinks)):
+            self._record_subtree(sinks[index], graphic_subroot.successors[index], level+1)
 
     @staticmethod
     def _extract_node_type(node: Forest.ForestNode) -> str:
@@ -159,10 +169,10 @@ class FileLoader(QObject):
 
     @staticmethod
     def _build_name_by_line_tokens(tokens: list[str]):
-        if len(tokens) == 4 and tokens[2] == ':':
-            return ''
+        if len(tokens) < 5:
+            raise FileLoader.InvalidRecord
 
-        name = tokens[3]
+        name = ''
         for token in tokens[4:]:
             name += ' ' + token
         name = name[:-1]

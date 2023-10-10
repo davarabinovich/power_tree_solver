@@ -135,7 +135,7 @@ class NetView(GraphView):
 
             self.contentChanged.emit()
 
-    def get_actual_last_hrids(self) -> LastHrids:
+    def get_actual_last_hrids(self) -> LastaHrids:
         last_hrids = LastHrids(power_inputs=self._cur_new_power_input_number,
                                converters=self._cur_new_converter_number,
                                consumers=self._cur_new_consumer_number)

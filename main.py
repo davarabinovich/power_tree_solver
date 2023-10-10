@@ -24,19 +24,21 @@ class AppSupervisor(QObject):
     @pyqtSlot()
     def receiveSaveAsAction(self):
         file_url_tuple = QFileDialog.getSaveFileUrl(self._main_window,
-                                                    caption="Save Electric Net", filter="Electric Net (*.ens)")
+                                                    caption='Save Electric Net',
+                                                    filter='Electric Net (*{extension})'.format(extension=EXTENSION))
         if file_url_tuple[0].isEmpty():
             return False
-        file_path = file_url_tuple[0].toString().removeprefix('file:///')
+        file_path: str = file_url_tuple[0].toString().removeprefix('file:///')
+        if not file_path.endswith(EXTENSION):
+            file_path += EXTENSION
 
         if self._logger.log_file is None:
             self._logger.create_log_file(file_path)
 
-        last_hrids = self._ui.graphview.get_actual_last_hrids()
-        self.needToSaveActiveNet.emit(self._active_net, file_path, last_hrids)
+        self.needToSaveActiveNet.emit(self._ui.graphview, file_path)
         return True
 
-    needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, 'PyQt_PyObject', name='needToSaveActiveNet')
+    needToSaveActiveNet = pyqtSignal('PyQt_PyObject', str, name='needToSaveActiveNet')
 
     def handleChangingNet(self):
         pressed_button = QMessageBox.question(self._main_window,
