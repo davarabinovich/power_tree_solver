@@ -6,6 +6,9 @@ class LoggerIf:
     def create_log_file(self, path_to_net_file):
         raise NotImplementedError
 
+    def log_loading(self, file_path):
+        raise NotImplementedError
+
     def write_action(self, action, *argv):
         raise NotImplementedError
 

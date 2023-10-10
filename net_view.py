@@ -190,8 +190,6 @@ class NetView(GraphView):
         for sink in ElectricNet.get_sinks(subroot):
             self._placeSubtree(sink, graph_node)
 
-        self._logger.write_generic_record('Electric net is loaded from file\n\n\n\n\n')
-
     def placeInput(self, node: Forest.ForestNode) -> GraphNode:
         widget, ui_form = self._prepare_source_widget()
         side_widgets = NetView._prepareSourceSideWidgets()
@@ -207,8 +205,6 @@ class NetView(GraphView):
         ui_form.valueLineEdit.textChanged.connect(self.contentChanged)
         ui_form.nameLineEdit.textChanged.connect(widget.changeName)
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
-
-        self._log('Load Power Input', widget.hrid)
 
         return power_input
 
@@ -230,13 +226,6 @@ class NetView(GraphView):
         ui_form.linearRadioButton.toggled.connect(widget.changeType)
         ui_form.linearRadioButton.toggled.connect(self.contentChanged)
 
-        source_hrid = ''
-        for item in source.childItems():
-            if isinstance(item, QGraphicsProxyWidget):
-                source_widget = item.widget()
-                source_hrid = source_widget.hrid
-        self._log('Load Converter', widget.hrid, source_hrid)
-
         return converter
 
     def placeLoad(self, node: Forest.ForestNode, source: GraphNode) -> GraphNode:
@@ -254,13 +243,6 @@ class NetView(GraphView):
         ui_form.nameLineEdit.textChanged.connect(self.contentChanged)
         ui_form.currentRadioButton.toggled.connect(widget.changeType)
         ui_form.currentRadioButton.toggled.connect(self.contentChanged)
-
-        source_hrid = ''
-        for item in source.childItems():
-            if isinstance(item, QGraphicsProxyWidget):
-                source_widget = item.widget()
-                source_hrid = source_widget.hrid
-        self._log('Load Consumer', widget.hrid, source_hrid)
 
         return load
 

@@ -21,6 +21,17 @@ class LoggerImpl(LoggerIf):
         self._activate_file(path_to_net_file)
         self._dump_temp_log_to_file()
 
+    def log_loading(self, file_path):
+        file = open(file_path, 'r')
+        file_content = file.read()
+        file.close()
+
+        if self._log_file is None:
+            raise LoggerImpl.NoLogFile
+
+        file_content += '\n\n'
+        self._write_new_record(file_content)
+
     def write_action(self, action, *argv):
         action_record = LoggerImpl._build_action_record(action, *argv)
         self._write_new_record(action_record)
