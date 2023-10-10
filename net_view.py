@@ -135,7 +135,7 @@ class NetView(GraphView):
 
             self.contentChanged.emit()
 
-    def get_actual_last_hrids(self) -> LastaHrids:
+    def get_actual_last_hrids(self) -> LastHrids:
         last_hrids = LastHrids(power_inputs=self._cur_new_power_input_number,
                                converters=self._cur_new_converter_number,
                                consumers=self._cur_new_consumer_number)
@@ -177,14 +177,14 @@ class NetView(GraphView):
                     widget.ui.loadValueLabel.setText(str(subroot.content.load))
                     if isinstance(widget, ConverterWidget):
                         if subroot.content.converter_type == ConverterType.SWITCHING:
-                            widget.ui.switchingRadioButton.setEnabled(True)
+                            widget.ui.switchingRadioButton.setChecked(True)
                         else:
-                            widget.ui.linearRadioButton.setEnabled(True)
+                            widget.ui.linearRadioButton.setChecked(True)
                 else:
                     if subroot.content.consumer_type == ConsumerType.CONSTANT_CURRENT:
-                        widget.ui.currentRadioButton.setEnabled(True)
+                        widget.ui.currentRadioButton.setChecked(True)
                     else:
-                        widget.ui.resistiveRadioButton.setEnabled(True)
+                        widget.ui.resistiveRadioButton.setChecked(True)
 
         # TODO: Neet to eliminate term 'input'
         for sink in ElectricNet.get_sinks(subroot):

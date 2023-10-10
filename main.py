@@ -44,7 +44,7 @@ class AppSupervisor(QObject):
         pressed_button = QMessageBox.question(self._main_window,
                                               'The net was probably changed', 'Do you want to save changes in the net?')
         if pressed_button == QMessageBox.StandardButton.Yes:
-            is_saved = self.receiveSaveAsAction(self._ui.graphview.get_actual_last_hrids())
+            is_saved = self.receiveSaveAsAction()
             return is_saved
         return True
 
@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
 
         pressed_button = file_saving_message_box.clickedButton()
         if pressed_button == save_button:
-            is_saved = self._sv.receiveSaveAsAction(self._ui.graphview.get_actual_last_hrids())
+            is_saved = self._sv.receiveSaveAsAction()
             if is_saved:
                 a0.accept()
             else:
