@@ -47,6 +47,10 @@ class NetView(GraphView):
     def init_net(self):
         self._electric_net = ElectricNet()
 
+        self._cur_new_power_input_number = 1
+        self._cur_new_converter_number = 1
+        self._cur_new_consumer_number = 1
+
     def set_net(self, net: ElectricNet, last_hrids: LastHrids):
         self._electric_net = net
         self.blockSignals(True)
@@ -70,6 +74,9 @@ class NetView(GraphView):
         self._is_waiting_for_node_selection = False
         self._parent_to_be_deleted: GraphNode | None = None
         self._parent_to_be_deleted_forest_node: Forest.ForestNode | None = None
+
+        self._nodes = 0
+        self._lines = 0
 
         self.validityStatusChanged.emit(True)
 

@@ -38,6 +38,9 @@ class Solver(QObject):
                 converter_load = self.calc_and_write_load(sink)
                 if type(converter_load) is float:
                     converter_consumption = Solver.calc_consumption(sink)
+                    if converter_consumption is None:
+                        return None
+
                     load += converter_consumption
                 else:
                     return None
@@ -70,7 +73,10 @@ class Solver(QObject):
             else:
                 sink_parent: Forest.ForestNode = sink.parent
                 parent_value = sink_parent.content.value
-                consumption = (sink_data.value / parent_value) * sink_data.load
+                try:
+                    consumption = (sink_data.value / parent_value) * sink_data.load
+                except ZeroDivisionError:
+                    return None
                 return consumption
         else:
             return sink_data.value
