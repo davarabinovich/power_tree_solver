@@ -1,1 +1,1 @@
-pyinstaller main.py --name=pts --onefile -- windowed
+pyinstaller main.py --name=pts --onefile --windowed

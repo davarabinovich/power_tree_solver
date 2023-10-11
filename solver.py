@@ -49,7 +49,10 @@ class Solver(QObject):
                     if sink_data.consumer_type == ConsumerType.CONSTANT_CURRENT:
                         load += sink_data.value
                     else:
-                        current = source_data.value / sink_data.value
+                        try:
+                            current = source_data.value / sink_data.value
+                        except ZeroDivisionError:
+                            return None
                         load += current
 
         source_data.load = load
