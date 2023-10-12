@@ -19,7 +19,7 @@ In terms of PTS, every electrical device you are designing (e. g. Print Circuit 
 
 You can **create** new net, **load** an existing one from the file in your local file system, and **save** the currently edited net using commands in the app's main menu:      
 
-!(pictures_for_manual/main_menu.png "PTS main menu")
+![](pictures_for_manual/main_menu.png "PTS main menu")
 
   
 You can select any location in your file system, that you want to save the net in, or that the file you want to load is located in. All these files have extensions '.ens':
