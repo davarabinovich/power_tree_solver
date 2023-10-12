@@ -175,7 +175,7 @@ class FileLoader(QObject):
         name = ''
         for token in tokens[4:]:
             name += ' ' + token
-        name = name[:-1]
+        name = name[1:-1]
         return name
 
     def _build_node_by_record(self, parent: Forest.ForestNode, tokens: list[str]) -> Forest.ForestNode:
