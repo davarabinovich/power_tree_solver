@@ -18,22 +18,25 @@ To get PTS, do following:
 In terms of PTS, every electrical device you are designing (e. g. Print Circuit Board) has its own electric net. You can work with one net at the same time.
 
 You can **create** new net, **load** an existing one from the file in your local file system, and **save** the currently edited net using commands in the app's main menu:
+
 ![desc](pictures_for_manual/main_menu.png "quota")
 
 You can select any location in your file system, that you want to save the net in, or that the file you want to load is located in. All these files have extensions '.ens':
-![desc](pictures_for_manual/add_input.png "quota")
+
+![desc](pictures_for_manual/file_dialog.png "quota")
 
 To **add** new **power input** to your network, press the corresponding plus widget:
+
 ![desc](pictures_for_manual/add_input.png "quota")
 
 To **add** new **converter** or **end-point consumer** to the source (either existing power input or converter) in your net, press the corresponding plus widgets left to the source:
-![desc](pictures_for_manual/.png "quota")
+![desc](pictures_for_manual/add_sink.png "quota")
 
 To set parameters to nodes of your net, just edit corresponding text fields or switch radio buttons on the graphic nodes on the screen:
 ![desc](pictures_for_manual/add_input.png "quota")
 
 To **delete** any node, just press the cross widget left to the node you want to delete:
-![desc](pictures_for_manual/add_input.png "quota")
+![desc](pictures_for_manual/delete.png "quota")
 
 If you want to **delete** some **converter**, that has children (no matter converters or consumers), you are asked to choose what to to with these childer - delete with their parent or promote to the higher ancestor:
 ![desc](pictures_for_manual/add_input.png "quota")
