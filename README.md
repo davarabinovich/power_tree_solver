@@ -7,6 +7,8 @@ The actual version supports the following features:
 - Two types of end-point consumers - constant current and fixed resistance
 - Two types of DC/DC voltage converters (as inner nodes of tree) - switching (with 100% efficiency) and linear
 
+The PTS app is currently on **alpha-testing stage**.
+
 # Startup
 To get PTS, do following:
 1. Select the **release** branch of this repo
@@ -14,6 +16,9 @@ To get PTS, do following:
 3. Launch the pts.exe file
 
 # Manual
+## Alpha Testing
+As mentioned above The PTS app is currently on alpha-testing stage. Therefore the app creates and writes a file with debugging log messages during its work. These files are located near the electric net .ens files (see below).
+
 ## Networks
 In terms of PTS, every electrical device you are designing (e. g. Print Circuit Board) has its own electric net. You can work with one net at the same time.     
 
@@ -25,6 +30,9 @@ You can **create** new net, **load** an existing one from the file in your local
 You can select any location in your file system, that you want to save the net in, or that the file you want to load is located in. All these files have extensions '.ens':
 
 ![](pictures_for_manual/file_dialog.png "PTS File dialog")
+
+While the app is on alpha-testing stage, once the new .ens file is created, the file with debugging log messages is created at the same directory as the .ens file.
+These log files need to be sent to the e-mail address izyakantorovich@gmail.com
 
 ## Network Structure Editing
 To **add** new **power input** to your network, press the corresponding plus widget:
