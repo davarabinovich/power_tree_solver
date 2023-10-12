@@ -1,4 +1,4 @@
-![image](https://github.com/davarabinovich/power_tree_solver/assets/48604998/78d551d2-a72c-48a5-b32a-b643b08a2781)# Power Tree Solver
+
 ## Description
 **Power Tree Solver** (**PTS**) is a graphic utility (based on PyQt) to calculation of power supply networks for PCB design or similar problems.
 PTS allow you to build an electric network (in form of a forest, or set of trees, where every root is a global power supply input of your system, every leaf is an end-point consumer), set parameters for its nodes and display consumptions in every node.
