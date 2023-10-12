@@ -24,34 +24,34 @@ You can **create** new net, **load** an existing one from the file in your local
   
 You can select any location in your file system, that you want to save the net in, or that the file you want to load is located in. All these files have extensions '.ens':
 
-!(pictures_for_manual/file_dialog.png "PTS File dialog")
+![](pictures_for_manual/file_dialog.png "PTS File dialog")
 
 ## Network Structure Editing
 To **add** new **power input** to your network, press the corresponding plus widget:
 
-!(pictures_for_manual/add_input.png "New power input addition")
+![](pictures_for_manual/add_input.png "New power input addition")
 
 
 To **add** new **converter** or **end-point consumer** (sink in general terms) to the source (either existing power input or converter) in your net, press the corresponding plus widgets left to the source:
 
-!(pictures_for_manual/add_sink.png "New sink addition")
+![](pictures_for_manual/add_sink.png "New sink addition")
 
 
 To **delete** any node, just press the cross widget left to the node you want to delete:
 
-!(pictures_for_manual/delete.png "Node deletion")
+![](pictures_for_manual/delete.png "Node deletion")
 
 
 If you want to **delete** some **converter**, that has children (no matter converters or consumers), you are asked to choose what to to with these childer - delete with their parent or promote to the higher ancestor:
 
-!(pictures_for_manual/add_input.png "Deletion node with existing sinks")
+![](pictures_for_manual/add_input.png "Deletion node with existing sinks")
 
 ## Setting Nodes Parameters
 To set parameters to nodes of your net, just edit corresponding text fields or switch radio buttons on the graphic nodes on the screen:
 
-!(pictures_for_manual/add_input.png "Parameters of nodes")
+![](pictures_for_manual/add_input.png "Parameters of nodes")
 
 ## Getting a Solution
 Total value of load (in amperes) are being calculated automatically for every source (power inputs and converters) and displayed on the corresponding graphic nodes:
 
-!(pictures_for_manual/solution.png "Displaying solution")
+![](pictures_for_manual/solution.png "Displaying solution")
